@@ -574,7 +574,7 @@
             renderContent();
         }
 
-        // Generate clean clean entry fields and set cursor focus to title
+        // Generate clean entry fields at the top without scrolling
         function addNewProperty() {
             const propId = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const newProp = {
@@ -590,19 +590,18 @@
                 minimized: false,
                 createdInMonth: appState.currentMonthIndex
             };
-            appState.properties.push(newProp);
+            // Adiciona no início do array para aparecer no topo da tela
+            appState.properties.unshift(newProp);
             saveToStorage();
             renderContent();
-            
-            // Scroll smoothly and place cursor directly into the property name input
-            const cardEl = document.getElementById(`card_${propId}`);
-            if (cardEl) {
-                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                const nameInput = cardEl.querySelector('.prop-title-input');
-                if (nameInput) {
-                    nameInput.focus();
+
+            // Foca automaticamente no campo de nome do novo imóvel no topo
+            setTimeout(() => {
+                const firstCardInput = document.querySelector('#propertiesContainer .prop-title-input');
+                if (firstCardInput) {
+                    firstCardInput.focus();
                 }
-            }
+            }, 50);
         }
 
         function removeProperty(id) {
@@ -815,7 +814,7 @@
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <input type="text" class="prop-title-input" value="${p.name}" placeholder="Nome do Imóvel/Identificação" onchange="handleFieldChange('${p.id}', 'name', this.value)">
+                        <input type="text" class="prop-title-input" value="${p.name}" placeholder="Nome do Imóvel/Identificação" onchange="handleFieldChange('${p.id}', 'name', this.value)" onkeydown="if(event.key === 'Enter' || event.keyCode === 13){ this.blur(); }">
                         <div class="card-controls">
                             <span class="minimized-summary" id="summary_${p.id}">Total: R$ 0,00</span>
                             <button class="btn btn-sm btn-dark" id="btnMin_${p.id}" onclick="toggleMinimize('${p.id}')">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button>
