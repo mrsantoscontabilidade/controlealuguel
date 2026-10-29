@@ -98,38 +98,6 @@
             padding: 0 15px;
         }
 
-        /* Dashboard */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .dash-card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--secondary);
-        }
-
-        .dash-card.entries { border-left-color: var(--success); }
-        .dash-card.expenses { border-left-color: var(--danger); }
-        .dash-card.net { border-left-color: #2980b9; }
-
-        .dash-card h3 {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            color: #7f8c8d;
-            margin-bottom: 5px;
-        }
-
-        .dash-card .value {
-            font-size: 1.4rem;
-            font-weight: bold;
-        }
-
         /* Global View Actions */
         .view-actions {
             display: flex;
@@ -380,32 +348,6 @@
                 color: #555;
             }
 
-            /* Dashboard print layout */
-            .dashboard {
-                display: flex !important;
-                justify-content: space-between !important;
-                gap: 10px !important;
-                margin-bottom: 20px !important;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                padding: 10px;
-                background: #fafafa !important;
-            }
-            .dash-card {
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-                background: transparent !important;
-                border-left: none !important;
-            }
-            .dash-card h3 {
-                font-size: 0.75rem !important;
-                color: #555 !important;
-            }
-            .dash-card .value {
-                font-size: 1.05rem !important;
-            }
-
             .container {
                 margin: 0;
                 padding: 0;
@@ -632,11 +574,12 @@
             renderContent();
         }
 
-        // Generate clean clean entry fields
+        // Generate clean clean entry fields and set cursor focus to title
         function addNewProperty() {
+            const propId = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const newProp = {
-                id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                name: 'Novo Imóvel ' + (getVisibleProperties().length + 1),
+                id: propId,
+                name: '',
                 date: '',
                 rent: '',
                 adminTax: '',
@@ -651,8 +594,15 @@
             saveToStorage();
             renderContent();
             
-            // Scroll smoothly to newly appended content at bottom
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            // Scroll smoothly and place cursor directly into the property name input
+            const cardEl = document.getElementById(`card_${propId}`);
+            if (cardEl) {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const nameInput = cardEl.querySelector('.prop-title-input');
+                if (nameInput) {
+                    nameInput.focus();
+                }
+            }
         }
 
         function removeProperty(id) {
@@ -680,11 +630,6 @@
         // Core analytical engine calculating real-time aggregates
         function updateDashboardAndTotals() {
             const propertiesInMonth = getVisibleProperties();
-            
-            let countTotal = propertiesInMonth.length;
-            let totalGross = 0;
-            let totalExpenses = 0;
-            let totalNet = 0;
 
             propertiesInMonth.forEach(p => {
                 // Local dynamic math conversions parsing text strings to float decimals safely
@@ -707,11 +652,6 @@
                 if(summaryBadge) {
                     summaryBadge.innerText = `Total: R$ ${formatCurrencyValue(computedTotal)}`;
                 }
-
-                // Global aggregates accumulation metrics
-                totalGross += (rent + electricity + water + otherRev);
-                totalExpenses += (adminTax + otherExp);
-                totalNet += computedTotal;
             });
         }
 
