@@ -747,10 +747,6 @@
                         <label>Total Aluguéis</label>
                         <div class="value" id="sumRent">R$ 0,00</div>
                     </div>
-                    <div class="summary-item deduction">
-                        <label>Total Taxa Adm. (-)</label>
-                        <div class="value" id="sumAdmin">R$ 0,00</div>
-                    </div>
                     <div class="summary-item">
                         <label>Total Energia (+)</label>
                         <div class="value" id="sumElec">R$ 0,00</div>
@@ -766,6 +762,14 @@
                     <div class="summary-item deduction">
                         <label>Total Outras Despesas (-)</label>
                         <div class="value" id="sumOthExp">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item" style="background: #f39c12; color: white;">
+                        <label style="color: #fff;">Base Trib. Carnê Leão</label>
+                        <div class="value" id="sumBase">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item deduction">
+                        <label>Total Taxa Adm. (-)</label>
+                        <div class="value" id="sumAdmin">R$ 0,00</div>
                     </div>
                     <div class="summary-item grand-total">
                         <label>TOTAL GERAL RECEBIDO NO MÊS</label>
@@ -1054,6 +1058,7 @@
             let sumWater = 0;
             let sumOthRev = 0;
             let sumOthExp = 0;
+            let sumBase = 0;
             let sumGrandTotal = 0;
 
             propertiesInMonth.forEach(p => {
@@ -1064,20 +1069,28 @@
                 const otherRev = parseFloat(p.otherRevenue) || 0;
                 const otherExp = parseFloat(p.otherExpenses) || 0;
 
-                const computedTotal = rent - adminTax + electricity + water + otherRev - otherExp;
+                const baseTotal = rent + electricity + water + otherRev - otherExp;
+                const computedTotal = baseTotal - adminTax;
 
                 sumRent += rent;
-                sumAdmin += adminTax;
                 sumElec += electricity;
                 sumWater += water;
                 sumOthRev += otherRev;
                 sumOthExp += otherExp;
+                sumBase += baseTotal;
+                sumAdmin += adminTax;
                 sumGrandTotal += computedTotal;
                 
+                const baseInput = document.getElementById(`base_${p.id}`);
+                if(baseInput) {
+                    baseInput.value = formatCurrencyValue(baseTotal);
+                }
+
                 const totalInput = document.getElementById(`total_${p.id}`);
                 if(totalInput) {
                     totalInput.value = formatCurrencyValue(computedTotal);
                 }
+                
                 const summaryBadge = document.getElementById(`summary_${p.id}`);
                 if(summaryBadge) {
                     summaryBadge.innerText = `Total: R$ ${formatCurrencyValue(computedTotal)}`;
@@ -1087,11 +1100,12 @@
             renderMonthlyTotalizer({
                 count: propertiesInMonth.length,
                 rent: sumRent,
-                admin: sumAdmin,
                 elec: sumElec,
                 water: sumWater,
                 othRev: sumOthRev,
                 othExp: sumOthExp,
+                base: sumBase,
+                admin: sumAdmin,
                 grandTotal: sumGrandTotal
             });
         }
@@ -1109,12 +1123,14 @@
             const monthName = MONTHS[appState.currentMonthIndex];
             document.getElementById('summaryMonthTitle').innerText = `📊 Totalizador Geral do Mês - ${monthName}`;
             document.getElementById('sumPropCount').innerText = `${totals.count} imóvel(is) lançado(s)`;
+            
             document.getElementById('sumRent').innerText = `R$ ${formatCurrencyValue(totals.rent)}`;
-            document.getElementById('sumAdmin').innerText = `R$ ${formatCurrencyValue(totals.admin)}`;
             document.getElementById('sumElec').innerText = `R$ ${formatCurrencyValue(totals.elec)}`;
             document.getElementById('sumWater').innerText = `R$ ${formatCurrencyValue(totals.water)}`;
             document.getElementById('sumOthRev').innerText = `R$ ${formatCurrencyValue(totals.othRev)}`;
             document.getElementById('sumOthExp').innerText = `R$ ${formatCurrencyValue(totals.othExp)}`;
+            document.getElementById('sumBase').innerText = `R$ ${formatCurrencyValue(totals.base)}`;
+            document.getElementById('sumAdmin').innerText = `R$ ${formatCurrencyValue(totals.admin)}`;
             document.getElementById('sumGrandTotal').innerText = `R$ ${formatCurrencyValue(totals.grandTotal)}`;
         }
 
@@ -1311,27 +1327,31 @@
                             </div>
                             <div class="form-row">
                                 <label>Valor do Aluguel (R$)</label>
-                                <input type="text" value="${displayRent}" onblur="handleNumberBlur(this, '${p.id}', 'rent')">
-                            </div>
-                            <div class="form-row deduction">
-                                <label>Desconto Taxa de Administração (R$)</label>
-                                <input type="text" value="${displayAdmin}" onblur="handleNumberBlur(this, '${p.id}', 'adminTax')">
+                                <input type="text" value="${displayRent}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'rent')">
                             </div>
                             <div class="form-row">
                                 <label>Energia Elétrica (R$)</label>
-                                <input type="text" value="${displayElec}" onblur="handleNumberBlur(this, '${p.id}', 'electricity')">
+                                <input type="text" value="${displayElec}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'electricity')">
                             </div>
                             <div class="form-row">
                                 <label>Água (R$)</label>
-                                <input type="text" value="${displayWater}" onblur="handleNumberBlur(this, '${p.id}', 'water')">
+                                <input type="text" value="${displayWater}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'water')">
                             </div>
                             <div class="form-row">
                                 <label>Outras Receitas (R$)</label>
-                                <input type="text" value="${displayOthRev}" onblur="handleNumberBlur(this, '${p.id}', 'otherRevenue')">
+                                <input type="text" value="${displayOthRev}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'otherRevenue')">
                             </div>
                             <div class="form-row deduction">
                                 <label>Outras Despesas (R$)</label>
-                                <input type="text" value="${displayOthExp}" onblur="handleNumberBlur(this, '${p.id}', 'otherExpenses')">
+                                <input type="text" value="${displayOthExp}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'otherExpenses')">
+                            </div>
+                            <div class="form-row total-row" style="background: #fcf3cf;">
+                                <label>Base tributável Carnê Leão (R$)</label>
+                                <input type="text" id="base_${p.id}" value="0,00" readonly>
+                            </div>
+                            <div class="form-row deduction">
+                                <label>Desconto Taxa de Administração (R$)</label>
+                                <input type="text" value="${displayAdmin}" placeholder="0,00" onblur="handleNumberBlur(this, '${p.id}', 'adminTax')">
                             </div>
                             <div class="form-row total-row">
                                 <label>TOTAL RECEBIDO (R$)</label>
