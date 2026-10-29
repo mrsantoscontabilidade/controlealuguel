@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Recebimento de Aluguel</title>
+    <!-- Dexie.js CDN para manipulação simplificada e rápida do IndexedDB -->
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3/dist/dexie.min.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -673,7 +675,7 @@
         <div class="company-container">
             <div class="company-header-card">
                 <div>
-                    <h2>🏢 Seleção de Empresas</h2>
+                    <h2>🏢 Seleção de Empresas (IndexedDB)</h2>
                     <p style="color: #7f8c8d; margin-top: 4px;">Escolha uma empresa para gerenciar os imóveis e recebimentos de aluguel.</p>
                 </div>
                 <div>
@@ -702,7 +704,7 @@
             <div class="header-main">
                 <div class="header-title">
                     <h1 id="selectedCompanyNameDisplay">Empresa Selecionada</h1>
-                    <sub>Gestão Imobiliária Portátil</sub>
+                    <sub>Gestão Imobiliária Portátil - Banco de Dados Local</sub>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-dark" onclick="goBackToCompanies()">🏢 Selecionar Empresa</button>
@@ -779,7 +781,7 @@
 
     <!-- Auto-save notification anchor toast -->
     <div id="toast">
-        <span id="toast-text">✓ Salvo automaticamente</span>
+        <span id="toast-text">✓ Salvo automaticamente no IndexedDB</span>
     </div>
 
     <script>
@@ -788,56 +790,67 @@
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
         ];
 
+        // --- INDEXEDDB DATABASE INITIALIZATION (Dexie.js) ---
+        const db = new Dexie("GestaoAluguelDB");
+        db.version(1).stores({
+            companies: 'id, name',
+            properties: 'id, companyId, date, createdInMonth'
+        });
+
         let appState = {
             currentCompanyId: null,
-            companies: [],
             currentMonthIndex: new Date().getMonth(),
-            properties: [] 
+            companies: [],
+            properties: []
         };
 
-        function loadFromStorage() {
-            const stored = localStorage.getItem('rent_app_data');
-            if (stored) {
-                try {
-                    appState = JSON.parse(stored);
-                    if (!appState.companies) appState.companies = [];
-                    if (!appState.properties) appState.properties = [];
-                    if (appState.currentMonthIndex === undefined) appState.currentMonthIndex = new Date().getMonth();
-
-                    if (appState.companies.length === 0 && appState.properties.length > 0) {
-                        const defaultCompId = 'comp_' + Date.now();
-                        appState.companies.push({ id: defaultCompId, name: 'Empresa Principal' });
-                        appState.properties.forEach(p => {
-                            if (!p.companyId) p.companyId = defaultCompId;
-                        });
+        // Initialize Database and Automatic Migration from LocalStorage if needed
+        async function initDatabase() {
+            try {
+                // Check if old localStorage exists and migrate
+                const storedLocalStorage = localStorage.getItem('rent_app_data');
+                if (storedLocalStorage) {
+                    try {
+                        const oldData = JSON.parse(storedLocalStorage);
+                        if (oldData.companies && oldData.companies.length > 0) {
+                            await db.companies.bulkPut(oldData.companies);
+                        }
+                        if (oldData.properties && oldData.properties.length > 0) {
+                            await db.properties.bulkPut(oldData.properties);
+                        }
+                        // Clear localStorage once migrated successfully
+                        localStorage.removeItem('rent_app_data');
+                    } catch(e) {
+                        console.error("Erro na migração do LocalStorage para IndexedDB", e);
                     }
-
-                    if (appState.companies.length > 0) {
-                        appState.properties.forEach(p => {
-                            if (!p.companyId) p.companyId = appState.companies[0].id;
-                        });
-                    }
-                } catch(e) {
-                    console.error("Erro carregando os dados do LocalStorage", e);
                 }
-            }
 
-            if (appState.companies.length === 0) {
-                const defaultCompId = 'comp_' + Date.now();
-                appState.companies.push({ id: defaultCompId, name: 'Minha Empresa' });
+                // Load initial data
+                await refreshLocalState();
+
+                // Create default company if database is empty
+                if (appState.companies.length === 0) {
+                    const defaultComp = { id: 'comp_' + Date.now(), name: 'Minha Empresa' };
+                    await db.companies.add(defaultComp);
+                    await refreshLocalState();
+                }
+
+                renderAppView();
+            } catch (err) {
+                console.error("Erro ao inicializar IndexedDB:", err);
             }
         }
 
-        function saveToStorage() {
-            localStorage.setItem('rent_app_data', JSON.stringify(appState));
-            showToast();
+        async function refreshLocalState() {
+            appState.companies = await db.companies.toArray();
+            appState.properties = await db.properties.toArray();
         }
 
         function showToast() {
             const toast = document.getElementById('toast');
             const now = new Date();
             const timeStr = now.toTimeString().split(' ')[0];
-            document.getElementById('toast-text').innerText = `✓ Salvo automaticamente às ${timeStr}`;
+            document.getElementById('toast-text').innerText = `✓ Guardado no IndexedDB às ${timeStr}`;
             toast.classList.add('show');
             
             clearTimeout(window.toastTimeout);
@@ -848,7 +861,8 @@
 
         /* --- COMPANY MANAGEMENT ENGINE --- */
 
-        function renderCompanySelection() {
+        async function renderCompanySelection() {
+            await refreshLocalState();
             const container = document.getElementById('companiesGrid');
             container.innerHTML = '';
 
@@ -872,26 +886,27 @@
             });
         }
 
-        function addNewCompany() {
+        async function addNewCompany() {
             const name = prompt("Digite o nome da nova empresa:");
             if (name && name.trim() !== "") {
                 const newCompany = {
                     id: 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
                     name: name.trim()
                 };
-                appState.companies.push(newCompany);
-                saveToStorage();
+                await db.companies.add(newCompany);
+                showToast();
                 renderCompanySelection();
             }
         }
 
-        function renameCompany(companyId) {
+        async function renameCompany(companyId) {
             const company = appState.companies.find(c => c.id === companyId);
             if (!company) return;
             const newName = prompt("Digite o novo nome para a empresa:", company.name);
             if (newName && newName.trim() !== "") {
                 company.name = newName.trim();
-                saveToStorage();
+                await db.companies.put(company);
+                showToast();
                 renderCompanySelection();
                 if (appState.currentCompanyId === companyId) {
                     document.getElementById('selectedCompanyNameDisplay').innerText = company.name;
@@ -899,32 +914,30 @@
             }
         }
 
-        function deleteCompany(companyId) {
+        async function deleteCompany(companyId) {
             if (appState.companies.length <= 1) {
-                alert("É necessário ter ao menos uma empresa cadastrada.");
+                alert("É necessário ter pelo menos uma empresa cadastrada.");
                 return;
             }
             const company = appState.companies.find(c => c.id === companyId);
             if (confirm(`Tem certeza que deseja excluir a empresa "${company.name}" e TODOS os seus imóveis? Esta ação é irreversível.`)) {
-                appState.companies = appState.companies.filter(c => c.id !== companyId);
-                appState.properties = appState.properties.filter(p => p.companyId !== companyId);
+                await db.companies.delete(companyId);
+                await db.properties.where("companyId").equals(companyId).delete();
                 if (appState.currentCompanyId === companyId) {
                     appState.currentCompanyId = null;
                 }
-                saveToStorage();
+                showToast();
                 renderAppView();
             }
         }
 
         function selectCompany(companyId) {
             appState.currentCompanyId = companyId;
-            saveToStorage();
             renderAppView();
         }
 
         function goBackToCompanies() {
             appState.currentCompanyId = null;
-            saveToStorage();
             renderAppView();
         }
 
@@ -937,7 +950,7 @@
 
         /* --- MASTER VIEW SWITCHER --- */
 
-        function renderAppView() {
+        async function renderAppView() {
             const companyView = document.getElementById('companySelectionView');
             const mainView = document.getElementById('mainAppView');
 
@@ -954,7 +967,7 @@
                 document.getElementById('selectedCompanyNameDisplay').innerText = companyName;
 
                 renderMonthsMenu();
-                renderContent();
+                await renderContent();
             }
         }
 
@@ -972,13 +985,13 @@
             });
         }
 
-        function switchMonth(index) {
+        async function switchMonth(index) {
             appState.currentMonthIndex = index;
             renderMonthsMenu();
-            renderContent();
+            await renderContent();
         }
 
-        function addNewProperty() {
+        async function addNewProperty() {
             if (!appState.currentCompanyId) return;
 
             const propId = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -996,9 +1009,10 @@
                 minimized: false,
                 createdInMonth: appState.currentMonthIndex
             };
-            appState.properties.unshift(newProp);
-            saveToStorage();
-            renderContent();
+            
+            await db.properties.add(newProp);
+            showToast();
+            await renderContent();
 
             setTimeout(() => {
                 const firstCardInput = document.querySelector('#propertiesContainer .prop-title-input');
@@ -1008,11 +1022,11 @@
             }, 50);
         }
 
-        function removeProperty(id) {
+        async function removeProperty(id) {
             if(confirm("Tem certeza que deseja excluir permanentemente este imóvel?")) {
-                appState.properties = appState.properties.filter(p => p.id !== id);
-                saveToStorage();
-                renderContent();
+                await db.properties.delete(id);
+                showToast();
+                await renderContent();
             }
         }
 
@@ -1108,28 +1122,32 @@
             return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        function handleNumberBlur(element, propId, fieldKey) {
+        async function handleNumberBlur(element, propId, fieldKey) {
             let val = element.value.replace(/\s/g, '').replace(',', '.');
+            const prop = appState.properties.find(p => p.id === propId);
+            if (!prop) return;
+
             if (val === '') {
-                appState.properties.find(p => p.id === propId)[fieldKey] = '';
+                prop[fieldKey] = '';
                 element.value = '';
             } else {
                 let parsed = parseFloat(val);
-                if (isNaN(parsed)) {
-                    parsed = 0;
-                }
-                appState.properties.find(p => p.id === propId)[fieldKey] = parsed.toFixed(2);
+                if (isNaN(parsed)) parsed = 0;
+                prop[fieldKey] = parsed.toFixed(2);
                 element.value = parsed.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
-            saveToStorage();
+
+            await db.properties.put(prop);
+            showToast();
             updateDashboardAndTotals();
         }
 
-        function handleFieldChange(propId, fieldKey, value) {
+        async function handleFieldChange(propId, fieldKey, value) {
             const prop = appState.properties.find(p => p.id === propId);
             if(prop) {
                 prop[fieldKey] = value;
-                saveToStorage();
+                await db.properties.put(prop);
+                showToast();
 
                 if (fieldKey === 'date') {
                     if (value) {
@@ -1137,7 +1155,7 @@
                         const targetMonth = parseInt(parts[1], 10) - 1;
                         if (targetMonth !== appState.currentMonthIndex) {
                             alert(`Imóvel movido automaticamente para a aba de ${MONTHS[targetMonth]} conforme a data informada.`);
-                            renderContent();
+                            await renderContent();
                             return;
                         }
                     }
@@ -1146,11 +1164,12 @@
             }
         }
 
-        function toggleMinimize(propId) {
+        async function toggleMinimize(propId) {
             const prop = appState.properties.find(p => p.id === propId);
             if(prop) {
                 prop.minimized = !prop.minimized;
-                saveToStorage();
+                await db.properties.put(prop);
+                showToast();
                 
                 const card = document.getElementById(`card_${propId}`);
                 if(card) {
@@ -1165,33 +1184,40 @@
             }
         }
 
-        function setAllMinimization(shouldMinimize) {
-            getVisibleProperties().forEach(p => {
+        async function setAllMinimization(shouldMinimize) {
+            const visibleProps = getVisibleProperties();
+            for (let p of visibleProps) {
                 p.minimized = shouldMinimize;
-            });
-            saveToStorage();
-            renderContent();
+                await db.properties.put(p);
+            }
+            showToast();
+            await renderContent();
         }
 
-        function clearCurrentMonth() {
+        async function clearCurrentMonth() {
             if(confirm(`Tem certeza que deseja remover todos os imóveis desta empresa cadastrados em ${MONTHS[appState.currentMonthIndex]}? Esta ação não pode ser desfeita.`)) {
                 const propertiesInMonth = getVisibleProperties();
                 const idsToRemove = propertiesInMonth.map(p => p.id);
-                appState.properties = appState.properties.filter(p => !idsToRemove.includes(p.id));
-                saveToStorage();
-                renderContent();
+                await db.properties.bulkDelete(idsToRemove);
+                showToast();
+                await renderContent();
             }
         }
 
         /* --- BACKUP & EXPORT SYSTEM --- */
 
-        function exportBackup() {
+        async function exportBackup() {
+            await refreshLocalState();
+            const exportData = {
+                companies: appState.companies,
+                properties: appState.properties
+            };
             const currentComp = appState.companies.find(c => c.id === appState.currentCompanyId);
             const suffix = currentComp ? `_${currentComp.name.replace(/\s+/g, '_')}` : '';
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_controle_aluguel${suffix}_${MONTHS[appState.currentMonthIndex]}.json`);
+            downloadAnchor.setAttribute("download", `backup_indexeddb_aluguel${suffix}_${MONTHS[appState.currentMonthIndex]}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -1202,22 +1228,22 @@
             if (!file) return;
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (importedData && Array.isArray(importedData.properties)) {
-                        appState = importedData;
-                        if (!appState.companies) appState.companies = [];
-                        
-                        if (appState.companies.length === 0 && appState.properties.length > 0) {
-                            const defaultId = 'comp_' + Date.now();
-                            appState.companies.push({ id: defaultId, name: 'Empresa Importada' });
-                            appState.properties.forEach(p => p.companyId = defaultId);
+                    if (importedData && (Array.isArray(importedData.properties) || Array.isArray(importedData.companies))) {
+                        await db.companies.clear();
+                        await db.properties.clear();
+
+                        if (Array.isArray(importedData.companies)) {
+                            await db.companies.bulkAdd(importedData.companies);
+                        }
+                        if (Array.isArray(importedData.properties)) {
+                            await db.properties.bulkAdd(importedData.properties);
                         }
 
-                        saveToStorage();
-                        renderAppView();
-                        alert("Backup importado e restaurado com sucesso!");
+                        await initDatabase();
+                        alert("Backup importado com sucesso para o IndexedDB!");
                     } else {
                         alert("Formato de arquivo de backup inválido.");
                     }
@@ -1239,7 +1265,8 @@
 
         /* --- UI BUILDER --- */
 
-        function renderContent() {
+        async function renderContent() {
+            await refreshLocalState();
             const container = document.getElementById('propertiesContainer');
             container.innerHTML = '';
 
@@ -1254,6 +1281,7 @@
                 return;
             }
 
+            // Render visible properties sorted chronologically or by creation
             visibleProps.forEach(p => {
                 const card = document.createElement('div');
                 card.id = `card_${p.id}`;
@@ -1279,7 +1307,7 @@
                         <div class="form-grid">
                             <div class="form-row">
                                 <label>Data de Recebimento</label>
-                                <input type="date" value="${p.date}" onchange="handleFieldChange('${p.id}', 'date', this.value)">
+                                <input type="date" value="${p.date || ''}" onchange="handleFieldChange('${p.id}', 'date', this.value)">
                             </div>
                             <div class="form-row">
                                 <label>Valor do Aluguel (R$)</label>
@@ -1323,8 +1351,7 @@
         }
 
         window.onload = function() {
-            loadFromStorage();
-            renderAppView();
+            initDatabase();
         };
     </script>
 </body>
