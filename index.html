@@ -30,6 +30,83 @@
             padding-bottom: 60px;
         }
 
+        /* Views Control */
+        #companySelectionView {
+            display: block;
+        }
+
+        #mainAppView {
+            display: none;
+        }
+
+        /* Company Selection Screen */
+        .company-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .company-header-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .company-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid var(--border);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .company-card:hover {
+            border-color: var(--secondary);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .company-card-header {
+            margin-bottom: 15px;
+        }
+
+        .company-card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .company-card-info {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .company-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
         /* Sticky Header */
         .sticky-header {
             position: sticky;
@@ -50,7 +127,14 @@
         }
 
         .header-title h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        .header-title sub {
+            font-size: 0.9rem;
+            color: #16a085;
+            font-weight: bold;
+            display: block;
         }
 
         .header-actions {
@@ -243,6 +327,81 @@
             color: var(--primary);
         }
 
+        /* Totalizer Card Styling */
+        .summary-card {
+            background: #2c3e50;
+            color: white;
+            border-radius: 8px;
+            margin-top: 30px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 2px solid #34495e;
+        }
+
+        .summary-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .summary-item label {
+            font-size: 0.82rem;
+            color: #bdc3c7;
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .summary-item .value {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .summary-item.deduction .value {
+            color: #ff7675;
+        }
+
+        .summary-item.grand-total {
+            background: var(--secondary);
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-radius: 6px;
+        }
+
+        .summary-item.grand-total label {
+            color: #e8f8f5;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        .summary-item.grand-total .value {
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
         /* Buttons */
         .btn {
             padding: 8px 14px;
@@ -322,6 +481,15 @@
             .form-row label {
                 font-size: 0.9rem;
             }
+            .company-header-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .summary-item.grand-total {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
         }
 
         @media print {
@@ -331,8 +499,12 @@
                 font-size: 12px;
                 color: #000;
             }
-            .sticky-header, .view-actions, .card-controls, .btn, #toast, .months-nav {
+            #companySelectionView, .sticky-header, .view-actions, .card-controls, .btn, #toast, .months-nav {
                 display: none !important;
+            }
+
+            #mainAppView {
+                display: block !important;
             }
             
             /* Print Header */
@@ -354,7 +526,6 @@
                 max-width: 100%;
             }
 
-            /* Clean stacked row formatting for properties */
             .property-card {
                 page-break-inside: avoid;
                 border: 1px solid #bbb !important;
@@ -430,7 +601,6 @@
                 font-weight: normal !important;
             }
 
-            /* Ocultar textos de exemplo (placeholders) na impressão */
             ::-webkit-input-placeholder { color: transparent !important; }
             :-moz-placeholder { color: transparent !important; }
             ::-moz-placeholder { color: transparent !important; }
@@ -458,52 +628,154 @@
                 font-size: 1.05rem !important;
                 color: #000 !important;
             }
+
+            /* Totalizer Print Rules */
+            .summary-card {
+                page-break-inside: avoid;
+                background: #f8f9fa !important;
+                color: #000 !important;
+                border: 2px solid var(--primary) !important;
+                box-shadow: none !important;
+                margin-top: 20px !important;
+                padding: 15px !important;
+            }
+            .summary-card h3 {
+                border-bottom: 1px solid #ccc !important;
+                color: #000 !important;
+            }
+            .summary-item {
+                background: #fff !important;
+                border: 1px solid #ddd !important;
+            }
+            .summary-item label {
+                color: #555 !important;
+            }
+            .summary-item .value {
+                color: #000 !important;
+            }
+            .summary-item.deduction .value {
+                color: #c0392b !important;
+            }
+            .summary-item.grand-total {
+                background: #2c3e50 !important;
+                color: #fff !important;
+            }
+            .summary-item.grand-total label, .summary-item.grand-total .value {
+                color: #fff !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div id="print-header">
-        <h2 id="print-month-title">Relatório de Recebimento de Aluguel</h2>
-        <p id="print-datetime"></p>
-    </div>
+    <!-- 🏢 TELA DE SELEÇÃO DE EMPRESAS -->
+    <div id="companySelectionView">
+        <div class="company-container">
+            <div class="company-header-card">
+                <div>
+                    <h2>🏢 Seleção de Empresas</h2>
+                    <p style="color: #7f8c8d; margin-top: 4px;">Escolha uma empresa para gerenciar os imóveis e recebimentos de aluguel.</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="addNewCompany()">➕ Cadastrar Nova Empresa</button>
+                    <button class="btn btn-outline" onclick="exportBackup()">💾 Backup Geral</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📂 Restaurar Backup</button>
+                </div>
+            </div>
 
-    <!-- Sticky Header Menu -->
-    <div class="sticky-header">
-        <div class="header-main">
-            <div class="header-title">
-                <h1>Gestão Imobiliária Portátil</h1>
+            <div class="company-grid" id="companiesGrid">
+                <!-- Rendered dynamically -->
             </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="addNewProperty()">➕ Novo Imóvel</button>
-                <button class="btn btn-dark" onclick="exportPDF()">📄 Gerar PDF</button>
-                <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.3);" onclick="exportBackup()">💾 Exportar Backup</button>
-                <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.3);" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
-                <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json">
-            </div>
-        </div>
-        
-        <!-- Months Navigation tabs -->
-        <div class="months-nav" id="monthsNav">
-            <!-- Rendered via JS -->
         </div>
     </div>
 
-    <div class="container">
-        <!-- Global View Utilities -->
-        <div class="view-actions">
-            <div>
-                <button class="btn btn-sm btn-outline" onclick="setAllMinimization(true)">▲ Minimizar Todos</button>
-                <button class="btn btn-sm btn-outline" onclick="setAllMinimization(false)">▼ Expandir Todos</button>
-            </div>
-            <button class="btn btn-sm btn-danger" onclick="clearCurrentMonth()">🗑️ Limpar Mês Atual</button>
+    <!-- 🏠 TELA PRINCIPAL DE GESTÃO DE IMÓVEIS DA EMPRESA -->
+    <div id="mainAppView">
+        <div id="print-header">
+            <h2 id="print-company-title">Empresa</h2>
+            <h3 id="print-month-title">Relatório de Recebimento de Aluguel</h3>
+            <p id="print-datetime"></p>
         </div>
 
-        <!-- Properties dynamic target container -->
-        <div id="propertiesContainer">
-            <!-- Dynamic Injection -->
+        <!-- Sticky Header Menu -->
+        <div class="sticky-header">
+            <div class="header-main">
+                <div class="header-title">
+                    <h1 id="selectedCompanyNameDisplay">Empresa Selecionada</h1>
+                    <sub>Gestão Imobiliária Portátil</sub>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-dark" onclick="goBackToCompanies()">🏢 Selecionar Empresa</button>
+                    <button class="btn btn-primary" onclick="addNewProperty()">➕ Novo Imóvel</button>
+                    <button class="btn btn-dark" onclick="exportPDF()">📄 Gerar PDF</button>
+                    <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.3);" onclick="exportBackup()">💾 Exportar Backup</button>
+                    <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.3);" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
+                </div>
+            </div>
+            
+            <!-- Months Navigation tabs -->
+            <div class="months-nav" id="monthsNav">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Global View Utilities -->
+            <div class="view-actions">
+                <div>
+                    <button class="btn btn-sm btn-outline" onclick="setAllMinimization(true)">▲ Minimizar Todos</button>
+                    <button class="btn btn-sm btn-outline" onclick="setAllMinimization(false)">▼ Expandir Todos</button>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="clearCurrentMonth()">🗑️ Limpar Mês Atual</button>
+            </div>
+
+            <!-- Properties dynamic target container -->
+            <div id="propertiesContainer">
+                <!-- Dynamic Injection -->
+            </div>
+
+            <!-- 📊 TOTALIZADOR DO MÊS (SUMÁRIO DE TODOS OS IMÓVEIS) -->
+            <div id="monthlySummaryContainer" class="summary-card" style="display: none;">
+                <h3>
+                    <span id="summaryMonthTitle">📊 Totalizador Geral do Mês</span>
+                    <span id="sumPropCount" style="font-size: 0.9rem; font-weight: normal; opacity: 0.85;">0 imóveis</span>
+                </h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <label>Total Aluguéis</label>
+                        <div class="value" id="sumRent">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item deduction">
+                        <label>Total Taxa Adm. (-)</label>
+                        <div class="value" id="sumAdmin">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Energia (+)</label>
+                        <div class="value" id="sumElec">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Água (+)</label>
+                        <div class="value" id="sumWater">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Outras Receitas (+)</label>
+                        <div class="value" id="sumOthRev">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item deduction">
+                        <label>Total Outras Despesas (-)</label>
+                        <div class="value" id="sumOthExp">R$ 0,00</div>
+                    </div>
+                    <div class="summary-item grand-total">
+                        <label>TOTAL GERAL RECEBIDO NO MÊS</label>
+                        <div class="value" id="sumGrandTotal">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Hidden Input File for Backup Import -->
+    <input type="file" id="importFile" style="display:none" onchange="importBackup(event)" accept=".json">
 
     <!-- Auto-save notification anchor toast -->
     <div id="toast">
@@ -516,27 +788,46 @@
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
         ];
 
-        // Core memory state structure
         let appState = {
+            currentCompanyId: null,
+            companies: [],
             currentMonthIndex: new Date().getMonth(),
             properties: [] 
         };
 
-        // Load data from LocalStorage immediately
         function loadFromStorage() {
             const stored = localStorage.getItem('rent_app_data');
             if (stored) {
                 try {
                     appState = JSON.parse(stored);
-                    if(!appState.properties) appState.properties = [];
-                    if(appState.currentMonthIndex === undefined) appState.currentMonthIndex = new Date().getMonth();
+                    if (!appState.companies) appState.companies = [];
+                    if (!appState.properties) appState.properties = [];
+                    if (appState.currentMonthIndex === undefined) appState.currentMonthIndex = new Date().getMonth();
+
+                    if (appState.companies.length === 0 && appState.properties.length > 0) {
+                        const defaultCompId = 'comp_' + Date.now();
+                        appState.companies.push({ id: defaultCompId, name: 'Empresa Principal' });
+                        appState.properties.forEach(p => {
+                            if (!p.companyId) p.companyId = defaultCompId;
+                        });
+                    }
+
+                    if (appState.companies.length > 0) {
+                        appState.properties.forEach(p => {
+                            if (!p.companyId) p.companyId = appState.companies[0].id;
+                        });
+                    }
                 } catch(e) {
                     console.error("Erro carregando os dados do LocalStorage", e);
                 }
             }
+
+            if (appState.companies.length === 0) {
+                const defaultCompId = 'comp_' + Date.now();
+                appState.companies.push({ id: defaultCompId, name: 'Minha Empresa' });
+            }
         }
 
-        // Save data to LocalStorage with timestamped toast
         function saveToStorage() {
             localStorage.setItem('rent_app_data', JSON.stringify(appState));
             showToast();
@@ -555,7 +846,120 @@
             }, 1500);
         }
 
-        // Render Months navigation headers
+        /* --- COMPANY MANAGEMENT ENGINE --- */
+
+        function renderCompanySelection() {
+            const container = document.getElementById('companiesGrid');
+            container.innerHTML = '';
+
+            appState.companies.forEach(company => {
+                const companyProps = appState.properties.filter(p => p.companyId === company.id);
+                
+                const card = document.createElement('div');
+                card.className = 'company-card';
+                card.innerHTML = `
+                    <div class="company-card-header">
+                        <div class="company-card-title">${escapeHtml(company.name)}</div>
+                        <div class="company-card-info">🏠 ${companyProps.length} imóvel(is) cadastrado(s)</div>
+                    </div>
+                    <div class="company-card-actions">
+                        <button class="btn btn-sm btn-primary" onclick="selectCompany('${company.id}')">📂 Abrir Recebimentos</button>
+                        <button class="btn btn-sm btn-outline" onclick="renameCompany('${company.id}')">✏️ Renomear</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCompany('${company.id}')">🗑️ Excluir</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function addNewCompany() {
+            const name = prompt("Digite o nome da nova empresa:");
+            if (name && name.trim() !== "") {
+                const newCompany = {
+                    id: 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    name: name.trim()
+                };
+                appState.companies.push(newCompany);
+                saveToStorage();
+                renderCompanySelection();
+            }
+        }
+
+        function renameCompany(companyId) {
+            const company = appState.companies.find(c => c.id === companyId);
+            if (!company) return;
+            const newName = prompt("Digite o novo nome para a empresa:", company.name);
+            if (newName && newName.trim() !== "") {
+                company.name = newName.trim();
+                saveToStorage();
+                renderCompanySelection();
+                if (appState.currentCompanyId === companyId) {
+                    document.getElementById('selectedCompanyNameDisplay').innerText = company.name;
+                }
+            }
+        }
+
+        function deleteCompany(companyId) {
+            if (appState.companies.length <= 1) {
+                alert("É necessário ter ao menos uma empresa cadastrada.");
+                return;
+            }
+            const company = appState.companies.find(c => c.id === companyId);
+            if (confirm(`Tem certeza que deseja excluir a empresa "${company.name}" e TODOS os seus imóveis? Esta ação é irreversível.`)) {
+                appState.companies = appState.companies.filter(c => c.id !== companyId);
+                appState.properties = appState.properties.filter(p => p.companyId !== companyId);
+                if (appState.currentCompanyId === companyId) {
+                    appState.currentCompanyId = null;
+                }
+                saveToStorage();
+                renderAppView();
+            }
+        }
+
+        function selectCompany(companyId) {
+            appState.currentCompanyId = companyId;
+            saveToStorage();
+            renderAppView();
+        }
+
+        function goBackToCompanies() {
+            appState.currentCompanyId = null;
+            saveToStorage();
+            renderAppView();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
+        /* --- MASTER VIEW SWITCHER --- */
+
+        function renderAppView() {
+            const companyView = document.getElementById('companySelectionView');
+            const mainView = document.getElementById('mainAppView');
+
+            if (!appState.currentCompanyId) {
+                companyView.style.display = 'block';
+                mainView.style.display = 'none';
+                renderCompanySelection();
+            } else {
+                companyView.style.display = 'none';
+                mainView.style.display = 'block';
+
+                const currentComp = appState.companies.find(c => c.id === appState.currentCompanyId);
+                const companyName = currentComp ? currentComp.name : "Empresa";
+                document.getElementById('selectedCompanyNameDisplay').innerText = companyName;
+
+                renderMonthsMenu();
+                renderContent();
+            }
+        }
+
+        /* --- PROPERTY MANAGEMENT ENGINE --- */
+
         function renderMonthsMenu() {
             const nav = document.getElementById('monthsNav');
             nav.innerHTML = '';
@@ -574,11 +978,13 @@
             renderContent();
         }
 
-        // Generate clean entry fields at the top without scrolling
         function addNewProperty() {
+            if (!appState.currentCompanyId) return;
+
             const propId = 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const newProp = {
                 id: propId,
+                companyId: appState.currentCompanyId,
                 name: '',
                 date: '',
                 rent: '',
@@ -590,12 +996,10 @@
                 minimized: false,
                 createdInMonth: appState.currentMonthIndex
             };
-            // Adiciona no início do array para aparecer no topo da tela
             appState.properties.unshift(newProp);
             saveToStorage();
             renderContent();
 
-            // Foca automaticamente no campo de nome do novo imóvel no topo
             setTimeout(() => {
                 const firstCardInput = document.querySelector('#propertiesContainer .prop-title-input');
                 if (firstCardInput) {
@@ -612,11 +1016,12 @@
             }
         }
 
-        // Filter algorithm determining which month a card currently populates
         function getVisibleProperties() {
             return appState.properties.filter(p => {
+                if (p.companyId !== appState.currentCompanyId) return false;
+
                 if (p.date) {
-                    const parts = p.date.split('-'); // YYYY-MM-DD standard HTML input format
+                    const parts = p.date.split('-');
                     if (parts.length === 3) {
                         const monthIdx = parseInt(parts[1], 10) - 1;
                         return monthIdx === appState.currentMonthIndex;
@@ -626,12 +1031,18 @@
             });
         }
 
-        // Core analytical engine calculating real-time aggregates
         function updateDashboardAndTotals() {
             const propertiesInMonth = getVisibleProperties();
 
+            let sumRent = 0;
+            let sumAdmin = 0;
+            let sumElec = 0;
+            let sumWater = 0;
+            let sumOthRev = 0;
+            let sumOthExp = 0;
+            let sumGrandTotal = 0;
+
             propertiesInMonth.forEach(p => {
-                // Local dynamic math conversions parsing text strings to float decimals safely
                 const rent = parseFloat(p.rent) || 0;
                 const adminTax = parseFloat(p.adminTax) || 0;
                 const electricity = parseFloat(p.electricity) || 0;
@@ -639,10 +1050,16 @@
                 const otherRev = parseFloat(p.otherRevenue) || 0;
                 const otherExp = parseFloat(p.otherExpenses) || 0;
 
-                // Total Recebido formulation specified by client template constraints:
                 const computedTotal = rent - adminTax + electricity + water + otherRev - otherExp;
+
+                sumRent += rent;
+                sumAdmin += adminTax;
+                sumElec += electricity;
+                sumWater += water;
+                sumOthRev += otherRev;
+                sumOthExp += otherExp;
+                sumGrandTotal += computedTotal;
                 
-                // Update live text node view inside the loop element if present
                 const totalInput = document.getElementById(`total_${p.id}`);
                 if(totalInput) {
                     totalInput.value = formatCurrencyValue(computedTotal);
@@ -652,14 +1069,45 @@
                     summaryBadge.innerText = `Total: R$ ${formatCurrencyValue(computedTotal)}`;
                 }
             });
+
+            renderMonthlyTotalizer({
+                count: propertiesInMonth.length,
+                rent: sumRent,
+                admin: sumAdmin,
+                elec: sumElec,
+                water: sumWater,
+                othRev: sumOthRev,
+                othExp: sumOthExp,
+                grandTotal: sumGrandTotal
+            });
         }
 
-        // Formatting routine forcing absolute valid comma precision
+        function renderMonthlyTotalizer(totals) {
+            const card = document.getElementById('monthlySummaryContainer');
+            if (!card) return;
+
+            if (totals.count === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            const monthName = MONTHS[appState.currentMonthIndex];
+            document.getElementById('summaryMonthTitle').innerText = `📊 Totalizador Geral do Mês - ${monthName}`;
+            document.getElementById('sumPropCount').innerText = `${totals.count} imóvel(is) lançado(s)`;
+            document.getElementById('sumRent').innerText = `R$ ${formatCurrencyValue(totals.rent)}`;
+            document.getElementById('sumAdmin').innerText = `R$ ${formatCurrencyValue(totals.admin)}`;
+            document.getElementById('sumElec').innerText = `R$ ${formatCurrencyValue(totals.elec)}`;
+            document.getElementById('sumWater').innerText = `R$ ${formatCurrencyValue(totals.water)}`;
+            document.getElementById('sumOthRev').innerText = `R$ ${formatCurrencyValue(totals.othRev)}`;
+            document.getElementById('sumOthExp').innerText = `R$ ${formatCurrencyValue(totals.othExp)}`;
+            document.getElementById('sumGrandTotal').innerText = `R$ ${formatCurrencyValue(totals.grandTotal)}`;
+        }
+
         function formatCurrencyValue(num) {
             return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Safe blur parsing event normalization targeting strict 2 decimal standard formatting rules
         function handleNumberBlur(element, propId, fieldKey) {
             let val = element.value.replace(/\s/g, '').replace(',', '.');
             if (val === '') {
@@ -677,16 +1125,12 @@
             updateDashboardAndTotals();
         }
 
-        // Handle text or inline mutation changes inside specific indices
         function handleFieldChange(propId, fieldKey, value) {
             const prop = appState.properties.find(p => p.id === propId);
             if(prop) {
                 prop[fieldKey] = value;
-                
-                // Trigger auto-save immediately
                 saveToStorage();
 
-                // Advanced reactive trigger checking if data changed its active filtering month constraint
                 if (fieldKey === 'date') {
                     if (value) {
                         const parts = value.split('-');
@@ -730,7 +1174,7 @@
         }
 
         function clearCurrentMonth() {
-            if(confirm(`Tem certeza que deseja remover todos os imóveis cadastrados em ${MONTHS[appState.currentMonthIndex]}? Esta ação não pode ser desfeita.`)) {
+            if(confirm(`Tem certeza que deseja remover todos os imóveis desta empresa cadastrados em ${MONTHS[appState.currentMonthIndex]}? Esta ação não pode ser desfeita.`)) {
                 const propertiesInMonth = getVisibleProperties();
                 const idsToRemove = propertiesInMonth.map(p => p.id);
                 appState.properties = appState.properties.filter(p => !idsToRemove.includes(p.id));
@@ -739,18 +1183,20 @@
             }
         }
 
-        // Backup system: Download JSON package natively 
+        /* --- BACKUP & EXPORT SYSTEM --- */
+
         function exportBackup() {
+            const currentComp = appState.companies.find(c => c.id === appState.currentCompanyId);
+            const suffix = currentComp ? `_${currentComp.name.replace(/\s+/g, '_')}` : '';
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_controle_aluguel_${MONTHS[appState.currentMonthIndex]}.json`);
+            downloadAnchor.setAttribute("download", `backup_controle_aluguel${suffix}_${MONTHS[appState.currentMonthIndex]}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
         }
 
-        // Backup system: Upload validation logic parsing raw backup string structure safely
         function importBackup(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -761,10 +1207,17 @@
                     const importedData = JSON.parse(e.target.result);
                     if (importedData && Array.isArray(importedData.properties)) {
                         appState = importedData;
+                        if (!appState.companies) appState.companies = [];
+                        
+                        if (appState.companies.length === 0 && appState.properties.length > 0) {
+                            const defaultId = 'comp_' + Date.now();
+                            appState.companies.push({ id: defaultId, name: 'Empresa Importada' });
+                            appState.properties.forEach(p => p.companyId = defaultId);
+                        }
+
                         saveToStorage();
-                        renderMonthsMenu();
-                        renderContent();
-                        alert("Backup importado e restaurado com sucesso absoluto!");
+                        renderAppView();
+                        alert("Backup importado e restaurado com sucesso!");
                     } else {
                         alert("Formato de arquivo de backup inválido.");
                     }
@@ -775,15 +1228,17 @@
             reader.readAsText(file);
         }
 
-        // Document Printer configuration preparing structural rendering visibility switches 
         function exportPDF() {
+            const currentComp = appState.companies.find(c => c.id === appState.currentCompanyId);
+            document.getElementById('print-company-title').innerText = currentComp ? currentComp.name : "Empresa";
             document.getElementById('print-month-title').innerText = `Relatório de Recebimentos - Competência: ${MONTHS[appState.currentMonthIndex]}`;
             const now = new Date();
             document.getElementById('print-datetime').innerText = `Gerado em: ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}`;
             window.print();
         }
 
-        // Master UI Builder creating native form grids dynamically
+        /* --- UI BUILDER --- */
+
         function renderContent() {
             const container = document.getElementById('propertiesContainer');
             container.innerHTML = '';
@@ -792,7 +1247,7 @@
 
             if(visibleProps.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding:40px; color:#7f8c8d; background:white; border-radius:8px; border:2px dashed var(--border)">
-                    Nenhum imóvel cadastrado ou alocado em <strong>${MONTHS[appState.currentMonthIndex]}</strong>.<br><br>
+                    Nenhum imóvel cadastrado para esta empresa em <strong>${MONTHS[appState.currentMonthIndex]}</strong>.<br><br>
                     Clique em <strong>➕ Novo Imóvel</strong> no topo para iniciar os lançamentos.
                 </div>`;
                 updateDashboardAndTotals();
@@ -804,7 +1259,6 @@
                 card.id = `card_${p.id}`;
                 card.className = `property-card ${p.minimized ? 'minimized' : ''}`;
 
-                // Display conversion formatting decimal variables inside local initialization view strings
                 const displayRent = p.rent ? parseFloat(p.rent).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '';
                 const displayAdmin = p.adminTax ? parseFloat(p.adminTax).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '';
                 const displayElec = p.electricity ? parseFloat(p.electricity).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '';
@@ -814,7 +1268,7 @@
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <input type="text" class="prop-title-input" value="${p.name}" placeholder="Nome do Imóvel/Identificação" onchange="handleFieldChange('${p.id}', 'name', this.value)" onkeydown="if(event.key === 'Enter' || event.keyCode === 13){ this.blur(); }">
+                        <input type="text" class="prop-title-input" value="${escapeHtml(p.name || '')}" placeholder="Nome do Imóvel/Identificação" onchange="handleFieldChange('${p.id}', 'name', this.value)" onkeydown="if(event.key === 'Enter' || event.keyCode === 13){ this.blur(); }">
                         <div class="card-controls">
                             <span class="minimized-summary" id="summary_${p.id}">Total: R$ 0,00</span>
                             <button class="btn btn-sm btn-dark" id="btnMin_${p.id}" onclick="toggleMinimize('${p.id}')">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button>
@@ -857,7 +1311,7 @@
                             </div>
                             <div class="form-row" style="grid-template-columns: 1fr; border:none; padding-top:10px;">
                                 <label style="margin-bottom:5px;">Observações Gerais / Histórico:</label>
-                                <textarea rows="2" placeholder="Digite observações sobre o pagamento ou manutenção..." onchange="handleFieldChange('${p.id}', 'observações', this.value)">${p.observações || ''}</textarea>
+                                <textarea rows="2" placeholder="Digite observações sobre o pagamento ou manutenção..." onchange="handleFieldChange('${p.id}', 'observações', this.value)">${escapeHtml(p.observações || '')}</textarea>
                             </div>
                         </div>
                     </div>
@@ -865,15 +1319,12 @@
                 container.appendChild(card);
             });
 
-            // Enforce update metrics loop directly after creating view components
             updateDashboardAndTotals();
         }
 
-        // App bootstrap initializer cycle execution
         window.onload = function() {
             loadFromStorage();
-            renderMonthsMenu();
-            renderContent();
+            renderAppView();
         };
     </script>
 </body>
