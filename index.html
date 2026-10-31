@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Recebimento de Aluguel (IndexedDB)</title>
+    <title>Controle de Recebimento de Aluguel</title>
     <style>
         :root {
             --primary: #2c3e50; --secondary: #16a085; --danger: #e74c3c;
@@ -17,6 +17,7 @@
         #companySelectionView { display: block; }
         #mainAppView { display: none; }
 
+        /* Companies */
         .company-container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
         .company-header-card { background: var(--card-bg); padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
@@ -27,12 +28,14 @@
         .company-card-info { font-size: 0.9rem; color: #7f8c8d; }
         .company-card-actions { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
 
+        /* Header */
         .sticky-header { position: sticky; top: 0; background: var(--primary); color: white; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header-main { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; flex-wrap: wrap; gap: 10px; }
-        .header-title h1 { font-size: 1.4rem; }
-        .header-title sub { font-size: 0.9rem; color: #16a085; font-weight: bold; display: block; }
+        .header-title h1 { font-size: 1.5rem; }
+        .header-title sub { font-size: 0.85rem; color: #16a085; font-weight: bold; display: block; }
         .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
+        /* Nav */
         .filter-nav-container { display: flex; background: #34495e; align-items: center; flex-wrap: wrap; }
         .year-selector { background: #2c3e50; padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-weight: bold; border-right: 2px solid #1a252f; }
         .year-selector select { padding: 4px 8px; border-radius: 4px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
@@ -44,9 +47,20 @@
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
         .view-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; }
 
+        /* Cards */
         .property-card { background: var(--card-bg); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.05); border: 2px solid var(--border); overflow: hidden; transition: border-color 0.3s; }
         .property-card.in-trash { border-color: #e74c3c; background: #fff5f5; }
         .property-card.in-trash .card-header { background: #fadbd8; }
+        
+        .grand-total-card { background: #f1f2f6; color: #000; border-radius: 8px; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 2px solid #dcdde1; overflow: hidden; }
+        .grand-total-header { background: #2c3e50; color: white; padding: 14px 20px; font-size: 1.15rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); }
+        .grand-total-body { padding: 15px; background: #ffffff; display: flex; flex-direction: column; gap: 8px; }
+        .gt-row { display: grid; grid-template-columns: 250px 1fr; padding: 8px 10px; border-bottom: 1px dashed #dcdde1; align-items: center; color: #000; gap: 10px; }
+        .gt-row label { font-weight: 600; color: #2c3e50; }
+        .gt-row .gt-val { font-weight: bold; font-size: 1.05rem; color: #000; }
+        .gt-row.gt-header-row { display: none; }
+        .gt-row.gt-total-row { background: #f1f2f6; color: #000000; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 1.15rem; margin-top: 8px; border: 1px solid #dcdde1; }
+
         .card-header { background: #f1f2f6; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border); }
         .prop-title-input { padding: 8px; font-size: 1rem; font-weight: bold; border: 1px solid var(--border); background: white; border-radius: 4px; }
         .prop-title-input:focus { border-color: var(--secondary); outline: none; }
@@ -56,32 +70,24 @@
         .minimized-summary { display: none; background: #34495e; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
         .property-card.minimized .minimized-summary { display: inline-block; }
 
-        .form-grid { display: flex; flex-direction: column; gap: 10px; }
-        .form-row { display: grid; grid-template-columns: 250px 1fr; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f2f6; }
+        /* Forms */
+        .form-grid { display: flex; flex-direction: column; gap: 8px; }
+        .form-row { display: grid; grid-template-columns: 250px 1fr; padding: 6px 0; border-bottom: 1px dashed #f1f2f6; align-items: center; gap: 10px; }
+        .form-row.date-row { grid-template-columns: 250px 220px; }
         .form-row:last-child { border-bottom: none; }
-        .form-row label { font-weight: 600; color: #34495e; }
+        .form-row label { font-weight: 600; color: #2c3e50; font-size: 0.95rem; }
         .form-row.deduction label { color: var(--danger); }
         .form-row.deduction input { color: var(--danger); border-color: #fadbd8; }
         .form-row.deduction input:focus { border-color: var(--danger); box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25); }
         .form-row.total-row { background: #eaeded; padding: 10px; border-radius: 4px; font-weight: bold; }
-        .form-row input, .form-row textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; transition: all 0.2s; }
-        .form-row input:focus, .form-row textarea:focus { border-color: var(--secondary); outline: none; box-shadow: 0 0 0 2px rgba(22, 160, 133, 0.2); }
+        .form-row input, .form-row textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; transition: all 0.2s; background: white; }
         .form-row input[readonly] { background-color: #e9ecef; font-weight: bold; color: var(--primary); }
 
+        .columns-header { display: none; }
+        .print-only-val { display: none; }
         .print-only-label { display: none; font-weight: bold; }
 
-        .summary-card { background: #2c3e50; color: white; border-radius: 8px; margin-top: 30px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid #34495e; }
-        .summary-card h3 { font-size: 1.2rem; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-        .summary-item { background: rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 6px; }
-        .summary-item label { font-size: 0.82rem; color: #bdc3c7; display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
-        .summary-item .value { font-size: 1.15rem; font-weight: bold; color: #ffffff; }
-        .summary-item.deduction .value { color: #ff7675; }
-        
-        .summary-item.grand-total { background: #f1f2f6; color: #000000; grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-radius: 6px; border: 1px solid #dcdde1; }
-        .summary-item.grand-total label { color: #2c3e50; font-size: 1rem; margin-bottom: 0; font-weight: bold; }
-        .summary-item.grand-total .value { font-size: 1.5rem; color: #000000; font-weight: bold; }
-
+        /* Buttons */
         .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; transition: all 0.2s; }
         .btn-sm { padding: 5px 10px; font-size: 0.85rem; }
         .btn-primary { background: var(--secondary); color: white; }
@@ -93,55 +99,137 @@
         .btn-outline:hover { background: #eee; }
 
         #toast { position: fixed; bottom: 20px; right: 20px; background: #2ecc71; color: white; padding: 12px 20px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; z-index: 2000; font-weight: bold; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; pointer-events: none; }
+        #toast.error { background: #e74c3c; }
         #toast.show { opacity: 1; transform: translateY(0); }
-        #print-header { display: none; text-align: center; margin-bottom: 6px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+        #print-header { display: none; text-align: center; margin-bottom: 4px; border-bottom: 2px solid var(--primary); padding-bottom: 3px; }
 
+        @media (max-width: 768px) {
+            .card-header { flex-direction: column; align-items: stretch; }
+            .prop-title-input { width: 100%; }
+            .card-controls { justify-content: flex-start; width: 100%; }
+            .form-row.date-row, .form-row { grid-template-columns: 1fr; }
+            .company-header-card { flex-direction: column; align-items: flex-start; }
+            .year-selector { border-right: none; border-bottom: 2px solid #1a252f; width: 100%; justify-content: center; }
+        }
+
+        /* ========== Diálogo de pessoas ========== */
+        #peopleDialog { border: none; border-radius: 10px; padding: 22px; width: min(420px, 92vw); box-shadow: 0 10px 30px rgba(0,0,0,.25); margin: auto; }
+        #peopleDialog::backdrop { background: rgba(0,0,0,.4); }
+        #peopleDialog h3 { margin-bottom: 6px; color: var(--primary); }
+        #peopleDialog .dialog-hint { font-size: .8rem; color: #7f8c8d; margin-bottom: 14px; }
+        #peopleDialog label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: .9rem; margin-bottom: 10px; color: var(--primary); }
+        #peopleDialog input, #peopleDialog select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+        /* ========== Resumo anual (tela) ========== */
+        .annual-card { background: var(--card-bg); border: 2px solid var(--border); border-top: 4px solid var(--primary); border-radius: 8px; padding: 18px; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
+        .annual-card h3 { font-size: 1.2rem; margin-bottom: 12px; color: var(--primary); }
+        .annual-scroll { overflow-x: auto; }
+        .annual-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        .annual-table th { background: var(--primary); color: #fff; padding: 9px 10px; text-align: right; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+        .annual-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #ecf0f1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .annual-table th:first-child, .annual-table td:first-child { text-align: left; }
+        .annual-table tbody tr:hover { background: #f4f9f8; }
+        .annual-table tr.muted td { color: #b2bec3; }
+        .annual-table tfoot td { font-weight: 700; background: #e8f5f1; border-top: 2px solid var(--secondary); color: #000; }
+        .annual-hint { margin-top: 10px; font-size: 0.82rem; color: #7f8c8d; }
+        .link-btn { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--secondary); cursor: pointer; text-decoration: underline; }
+
+        /* ========== IMPRESSÃO / PDF (A4 retrato, 6 imóveis + totalizador por página) ========== */
         @media print {
-            @page { size: A4; margin: 5mm; }
-            body { background: white; padding-bottom: 0; font-size: 8px; color: #000 !important; }
-            #companySelectionView, .sticky-header, .view-actions, .card-controls, .btn, #toast, .filter-nav-container { display: none !important; }
-            #mainAppView, #print-header { display: block !important; }
-            
-            #print-header h2 { font-size: 0.95rem; margin-bottom: 1px; color: #000 !important; }
-            #print-header h3 { font-size: 0.8rem; margin-bottom: 1px; color: #000 !important; }
-            #print-header p { font-size: 0.65rem; color: #000 !important; }
+            @page { size: A4 portrait; margin: 8mm 8mm 10mm 8mm; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            html, body { background: #fff; }
+            body { padding: 0; font-size: 8pt; line-height: 1.25; color: #1a1a1a; font-variant-numeric: tabular-nums; }
 
-            .container { margin: 0; padding: 0; max-width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-            #monthlySummaryContainer { grid-column: 1 / -1; margin-top: 4px; padding: 6px 8px !important; }
+            #companySelectionView, .sticky-header, .view-actions, .card-controls, .btn, #toast, .filter-nav-container, .minimized-summary { display: none !important; }
+            #mainAppView { display: block !important; }
 
-            .property-card { page-break-inside: avoid; border: 1px solid #aaa !important; border-radius: 2px !important; margin-bottom: 0 !important; box-shadow: none !important; background: white !important; }
+            /* Cabeçalho do relatório */
+            #print-header { display: grid !important; grid-template-columns: 1fr auto; align-items: end; gap: 0 10mm;
+                text-align: left; margin: 0 0 4mm; padding: 0 0 2mm; border-bottom: 0.6mm solid #16a085; }
+            #print-header h2 { font-size: 15pt; font-weight: 700; color: #2c3e50; margin: 0; }
+            #print-header h3 { font-size: 9.5pt; font-weight: 600; color: #16a085; margin: 0; text-align: right; }
+            #print-header p  { grid-column: 1 / -1; font-size: 6.5pt; color: #7f8c8d; margin-top: 1mm; }
+
+            /* Grade de cartões */
+            .container { max-width: 100%; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; align-items: start; }
+
+            .property-card { break-inside: avoid; page-break-inside: avoid; margin: 0 !important; background: #fff !important;
+                border: 0.25mm solid #b8c0c8 !important; border-radius: 1.5mm !important; box-shadow: none !important; overflow: hidden; }
             .property-card.minimized .card-body { display: block !important; }
-            .minimized-summary { display: none !important; }
-            
-            .card-header { background: #f0f0f0 !important; padding: 2px 5px !important; border-bottom: 1px solid #ccc !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 6px !important; }
-            .print-only-label { display: inline-block !important; color: #000 !important; font-size: 7.5px !important; font-weight: bold !important; white-space: nowrap !important; }
-            .prop-title-input { font-size: 7.5px !important; font-weight: bold !important; color: #000 !important; padding: 0 !important; border: none !important; background: transparent !important; box-shadow: none !important; width: auto !important; height: auto !important; }
-            
-            .card-body { padding: 3px 5px !important; }
-            .form-grid { gap: 1px !important; }
-            .form-row { display: flex !important; justify-content: space-between !important; align-items: center !important; padding: 1.5px 0 !important; border-bottom: 1px solid #eee !important; grid-template-columns: none !important; }
+
+            /* Cabeçalho do cartão: faixa escura com inquilino e CPF */
+            .card-header { background: #2c3e50 !important; border: none !important; padding: 1.6mm 2.5mm !important; gap: 1.5mm !important;
+                display: flex !important; flex-wrap: nowrap !important; align-items: baseline !important; }
+            .print-only-label { display: inline-block !important; color: #aab7c4 !important; font-size: 5.5pt !important; font-weight: 700 !important; letter-spacing: .04em; }
+            .prop-title-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;
+                color: #fff !important; font-size: 8pt !important; font-weight: 700 !important; height: auto !important; min-width: 0 !important; width: auto !important; }
+            .prop-title-input:first-of-type { flex: 1 1 auto !important; }
+
+            .card-body { padding: 1.5mm 2.5mm 2mm !important; }
+            .form-grid { gap: 0 !important; }
+
+            /* Linhas: rótulo + Total + Pessoa 1 + Pessoa 2 */
+            .columns-header, .form-row { display: grid !important; grid-template-columns: 27mm repeat(var(--cols, 3), minmax(0, 1fr)) !important; column-gap: 1.5mm !important; align-items: center !important; }
+            .columns-header { font-size: 5.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #7f8c8d;
+                padding: 0 0 0.8mm; margin-bottom: 0.5mm; border-bottom: 0.25mm solid #16a085; }
+            .form-row { padding: 0.7mm 1mm !important; border-bottom: 0.15mm solid #e6e9ec !important; }
+            .form-row:nth-of-type(even) { background: #f7f9fa; }
             .form-row:last-child { border-bottom: none !important; }
-            .form-row label { font-size: 7.5px !important; color: #000 !important; font-weight: 500 !important; }
-            .form-row.deduction label { color: #000 !important; font-weight: 500 !important; }
-            .form-row input, .form-row textarea { border: none !important; background: transparent !important; padding: 0 !important; text-align: right !important; font-size: 7.5px !important; font-weight: 600 !important; width: auto !important; box-shadow: none !important; height: auto !important; color: #000 !important; }
-            .form-row textarea { text-align: left !important; font-weight: normal !important; font-size: 7px !important; color: #000 !important; }
-            ::-webkit-input-placeholder, ::placeholder { color: transparent !important; }
-            .form-row.deduction input { color: #000 !important; }
-            
-            .form-row.total-row { background: #f5f5f5 !important; padding: 2px 4px !important; margin-top: 1px !important; border-radius: 2px !important; border-bottom: none !important; }
-            .form-row.total-row label { font-weight: bold !important; color: #000 !important; font-size: 7.5px !important; }
-            .form-row.total-row input { font-size: 8px !important; color: #000 !important; }
-            
-            .summary-card { background: #f8f9fa !important; color: #000 !important; border: 1px solid var(--primary) !important; box-shadow: none !important; }
-            .summary-card h3 { border-bottom: 1px solid #ccc !important; color: #000 !important; font-size: 0.85rem !important; margin-bottom: 4px !important; padding-bottom: 2px !important; }
-            .summary-grid { gap: 4px !important; }
-            .summary-item { background: #fff !important; border: 1px solid #ddd !important; padding: 3px 5px !important; }
-            .summary-item label { color: #000 !important; font-size: 6.5px !important; font-weight: bold !important; }
-            .summary-item .value { color: #000 !important; font-size: 0.8rem !important; }
-            .summary-item.deduction .value { color: #000 !important; }
-            .summary-item.grand-total { background: #f1f2f6 !important; color: #000 !important; border: 1px solid #ccc !important; padding: 5px 8px !important; }
-            .summary-item.grand-total label { color: #000 !important; font-weight: bold !important; font-size: 0.85rem !important; }
-            .summary-item.grand-total .value { color: #000 !important; font-size: 0.95rem !important; }
+            .form-row.date-row { grid-template-columns: 27mm 1fr !important; }
+            .form-row.date-row input { text-align: left !important; }
+            .form-row label { font-size: 7pt !important; font-weight: 500 !important; color: #34495e !important; margin: 0 !important; }
+
+            .form-row input, .form-row textarea, .print-only-val { display: block !important; width: 100% !important; height: auto !important;
+                border: none !important; background: transparent !important; box-shadow: none !important; padding: 0 !important;
+                text-align: right !important; font-size: 7.5pt !important; font-weight: 600 !important; color: #1a1a1a !important; font-family: inherit; }
+            .print-only-val { display: block !important; }
+            ::placeholder { color: transparent !important; }
+
+            /* Deduções em vermelho */
+            .form-row.deduction label, .form-row.deduction input { color: #c0392b !important; }
+
+            /* Linhas de total */
+            .form-row.total-row { margin-top: 0.6mm; padding: 1mm !important; border-radius: 0.8mm; border: none !important; background: #eaeded !important; }
+            .form-row.total-row label, .form-row.total-row input { font-weight: 700 !important; color: #1a1a1a !important; }
+            .form-row.total-row[style*="fcf3cf"] { background: #fcf3cf !important; }
+            .form-row.total-row:not([style]) { background: #d5f0e6 !important; }
+            .form-row.total-row:not([style]) input { color: #0e6b53 !important; font-size: 8pt !important; }
+
+            /* Observações: some se estiver vazia */
+            .form-row.obs-row { display: block !important; background: none !important; padding-top: 1mm !important; }
+            .form-row.obs-row.obs-empty { display: none !important; }
+            .form-row.obs-row label { font-size: 6pt !important; color: #7f8c8d !important; text-transform: uppercase; }
+            .form-row.obs-row textarea { text-align: left !important; font-weight: 400 !important; font-size: 7pt !important; resize: none; }
+
+            /* Totalizador do mês */
+            .grand-total-card { grid-column: 1 / -1; break-inside: avoid; margin: 2mm 0 0 !important; background: #fff !important;
+                border: 0.3mm solid #2c3e50 !important; border-radius: 1.5mm !important; box-shadow: none !important; overflow: hidden; }
+            .grand-total-header { background: #2c3e50 !important; color: #fff !important; padding: 2mm 3mm !important; font-size: 9.5pt !important; border-bottom: 0.5mm solid #16a085 !important; }
+            .grand-total-body { background: #fff !important; padding: 1.5mm 3mm 2mm !important; gap: 0 !important; }
+            .gt-row { display: grid !important; grid-template-columns: 1fr repeat(var(--cols, 3), 30mm) !important; column-gap: 3mm !important; padding: 0.9mm 1mm !important;
+                border-bottom: 0.15mm solid #e6e9ec !important; font-size: 8pt !important; color: #1a1a1a !important; align-items: center !important; }
+            .gt-row.gt-header-row { display: grid !important; font-size: 6pt !important; font-weight: 700 !important; text-transform: uppercase; color: #7f8c8d !important; border-bottom: 0.25mm solid #16a085 !important; }
+            .gt-row label { font-size: 8pt !important; font-weight: 600 !important; color: #34495e !important; }
+            .gt-row .gt-val { display: block !important; text-align: right !important; font-size: 8pt !important; font-weight: 600 !important; color: #1a1a1a !important; }
+            .gt-row.deduction label, .gt-row.deduction .gt-val { color: #c0392b !important; }
+            .gt-row.gt-total-row { background: #d5f0e6 !important; border: none !important; border-radius: 1mm !important; margin-top: 1mm; padding: 1.6mm 1mm !important; }
+            .gt-row.gt-total-row label, .gt-row.gt-total-row .gt-val { font-size: 9.5pt !important; font-weight: 700 !important; color: #0e6b53 !important; }
+
+            /* Resumo anual */
+            #annualContainer { grid-column: 1 / -1; }
+            .annual-card { background: #fff !important; border: 0.3mm solid #2c3e50 !important; border-top: 1.2mm solid #2c3e50 !important; border-radius: 1.5mm !important; box-shadow: none !important; padding: 3mm !important; break-inside: avoid; }
+            .annual-card h3 { font-size: 11pt; color: #2c3e50; margin-bottom: 2.5mm; }
+            .annual-scroll { overflow: visible !important; }
+            .annual-table { font-size: 7.5pt; }
+            .annual-table th { background: #2c3e50 !important; color: #fff !important; font-size: 6.5pt; padding: 1.6mm 1.2mm; }
+            .annual-table td { padding: 1.6mm 1.2mm; border-bottom: 0.15mm solid #e0e5e6; color: #1a1a1a; }
+            .annual-table tr.muted td { color: #999; }
+            .annual-table tfoot td { background: #d5f0e6 !important; border-top: 0.4mm solid #16a085; color: #0e6b53; font-size: 8pt; }
+            .annual-hint { display: none !important; }
+            .link-btn { text-decoration: none; color: inherit; }
+            .columns-header > div, .gt-row.gt-header-row > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         }
     </style>
 </head>
@@ -152,10 +240,15 @@
             <div class="company-header-card">
                 <div>
                     <h2>🏢 Seleção de Empresas</h2>
-                    <p style="color: #7f8c8d; margin-top: 4px;">Armazenamento Local Seguro (IndexedDB)</p>
+                    <p style="color: #7f8c8d; margin-top: 4px;">Dados salvos neste navegador (IndexedDB)</p>
                 </div>
                 <div>
                     <button class="btn btn-primary" onclick="addNewCompany()">➕ Cadastrar Nova Empresa</button>
+                    <button class="btn btn-outline" onclick="downloadBackup()" title="Baixa um arquivo .json com todas as empresas e imóveis">⬇️ Baixar Backup</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('restoreFile').click()" title="Restaura empresas e imóveis a partir de um backup .json">⬆️ Restaurar Backup</button>
+                    <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(this)">
+                    <button class="btn btn-outline" onclick="importFromOldServer()" title="Copia os dados do server.js antigo para este navegador">🔄 Importar do servidor antigo</button>
+                    <div id="backupInfo" style="font-size: 0.8rem; margin-top: 6px; text-align: right;"></div>
                 </div>
             </div>
             <div class="company-grid" id="companiesGrid"></div>
@@ -173,11 +266,14 @@
             <div class="header-main">
                 <div class="header-title">
                     <h1 id="selectedCompanyNameDisplay">Empresa Selecionada</h1>
-                    <sub>Gestão Imobiliária - App 1 (Base Leão)</sub>
+                    <sub id="headerSub">Gestão Imobiliária - App 2</sub>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-dark" onclick="goBackToCompanies()">🏢 Selecionar Empresa</button>
+                    <button class="btn btn-dark" onclick="openPeopleDialog()" title="Número de pessoas e nomes">👥 Pessoas</button>
                     <button class="btn btn-primary" id="btnNewProp" onclick="addNewProperty()">➕ Novo Imóvel</button>
+                    <button class="btn btn-dark" id="btnAnnual" onclick="toggleAnnual()">📊 Resumo Anual</button>
+                    <button class="btn btn-dark" onclick="exportCSV()" title="Exporta o mês (ou o resumo anual) para abrir no Excel">📑 Exportar CSV</button>
                     <button class="btn btn-dark" onclick="exportPDF()">📄 Gerar PDF</button>
                 </div>
             </div>
@@ -192,6 +288,7 @@
         </div>
 
         <div class="container">
+            <div id="monthlyArea" style="display: contents;">
             <div class="view-actions" style="grid-column: 1 / -1;">
                 <div>
                     <button class="btn btn-sm btn-outline" onclick="setAllMinimization(true)">▲ Minimizar Todos</button>
@@ -206,492 +303,726 @@
 
             <div id="propertiesContainer" style="display: contents;"></div>
 
-            <div id="monthlySummaryContainer" class="summary-card" style="display: none;">
-                <h3>
+            <div id="monthlySummaryContainer" class="grand-total-card" style="display: none;">
+                <div class="grand-total-header">
                     <span id="summaryMonthTitle">📊 Totalizador Geral do Mês</span>
                     <span id="sumPropCount" style="font-size: 0.9rem; font-weight: normal; opacity: 0.85;">0 imóveis</span>
-                </h3>
-                <div class="summary-grid">
-                    <div class="summary-item"><label>Total Aluguéis (+)</label><div class="value" id="sumRent">0,00</div></div>
-                    <div class="summary-item"><label>Total Energia (+)</label><div class="value" id="sumElec">0,00</div></div>
-                    <div class="summary-item"><label>Total Água (+)</label><div class="value" id="sumWater">0,00</div></div>
-                    <div class="summary-item"><label>Total Outras Receitas (+)</label><div class="value" id="sumOthRev">0,00</div></div>
-                    <div class="summary-item deduction"><label>Total Outras Despesas (-)</label><div class="value" id="sumOthExp">0,00</div></div>
-                    <div class="summary-item" style="background: #f39c12; color: white;"><label style="color: #fff;">BASE TRIB. CARNÊ LEÃO (=)</label><div class="value" id="sumBase">0,00</div></div>
-                    <div class="summary-item deduction"><label>Total Taxa Adm. (-)</label><div class="value" id="sumAdmin">0,00</div></div>
-                    <div class="summary-item grand-total"><label>TOTAL GERAL RECEBIDO NO MÊS (=)</label><div class="value" id="sumGrandTotal">0,00</div></div>
+                </div>
+                <div class="grand-total-body" id="gtBody"></div>
+            </div>
+            </div>
+            <div id="annualContainer" style="display: none; grid-column: 1 / -1;">
+                <div class="annual-card">
+                    <h3 id="annualTitle">📊 Resumo Anual</h3>
+                    <div class="annual-scroll"><table class="annual-table" id="annualTable"></table></div>
+                    <p class="annual-hint">Clique no nome de um mês para abri-lo.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="toast"><span id="toast-text">✓ Salvo no Navegador</span></div>
+    <dialog id="peopleDialog">
+        <h3>👥 Pessoas que dividem o valor</h3>
+        <p class="dialog-hint">O valor é dividido igualmente entre as pessoas (1 a 4). Sobras de centavos ficam com as primeiras. Vale para todos os meses desta empresa.</p>
+        <label>Quantidade de pessoas
+            <select id="peopleCount" onchange="onPeopleCountChange()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+        </label>
+        <div id="peopleNames"></div>
+        <div class="dialog-actions">
+            <button class="btn btn-outline" onclick="document.getElementById('peopleDialog').close()">Cancelar</button>
+            <button class="btn btn-primary" onclick="savePeople()">Salvar</button>
+        </div>
+    </dialog>
+
+    <div id="toast"><span id="toast-text">✓ Salvo no navegador</span></div>
 
     <script>
-        const DB_NAME = 'AluguelDB_App1';
-        const DB_VERSION = 1;
-        let db = null;
         const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const $ = id => document.getElementById(id);
 
-        let appState = {
-            currentCompanyId: null,
-            currentMonthIndex: new Date().getMonth(),
-            currentYear: new Date().getFullYear(),
-            showingTrash: false,
-            companies: [],
-            properties: []
-        };
+        // Campos monetários: key = chave salva, id = prefixo dos elementos, sum = sufixo do totalizador
+        const FIELDS = [
+            { key: 'rent',          id: 'rent',    sum: 'Rent',   label: 'Valor do Aluguel (+)' },
+            { key: 'electricity',   id: 'elec',    sum: 'Elec',   label: 'Energia Elétrica (+)' },
+            { key: 'water',         id: 'water',   sum: 'Water',  label: 'Água (+)' },
+            { key: 'otherRevenue',  id: 'othRev',  sum: 'OthRev', label: 'Outras Receitas (+)' },
+            { key: 'otherExpenses', id: 'othExp',  sum: 'OthExp', label: 'Outras Despesas (-)', ded: true },
+            { key: 'adminTax',      id: 'admin',   sum: 'Admin',  label: 'Desconto Taxa Adm. (-)', ded: true }
+        ];
+        const SUMS = [...FIELDS.map(f => [f.key, f.sum]), ['base', 'Base'], ['total', 'GrandTotal']];
 
-        function initIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = e => reject(e.target.error);
-                request.onsuccess = e => { db = e.target.result; resolve(db); };
-                request.onupgradeneeded = e => {
-                    const database = e.target.result;
-                    if (!database.objectStoreNames.contains('companies')) {
-                        database.createObjectStore('companies', { keyPath: 'id' });
-                    }
-                    if (!database.objectStoreNames.contains('properties')) {
-                        database.createObjectStore('properties', { keyPath: 'id' });
-                    }
-                };
-            });
+        let appState = { currentCompanyId: null, currentMonthIndex: new Date().getMonth(), currentYear: new Date().getFullYear(), showingTrash: false, view: 'monthly', dirty: false, companies: [], properties: [] };
+
+        /* ---------- Dinheiro em centavos inteiros ---------- */
+        const toCents = v => Math.round(parseFloat(v) * 100) || 0;
+        const fmtCents = c => (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // Pessoas que dividem o valor (1 a 4), por empresa. Nomes editáveis em "👥 Pessoas".
+        const MAX_PEOPLE = 4;
+        const defaultNames = n => Array.from({ length: n }, (_, i) => `Pessoa ${i + 1}`);
+        let PEOPLE = defaultNames(2);
+        const NP = () => PEOPLE.length;
+        const zeros = () => Array(NP() + 1).fill(0);
+        const splitDesc = () => NP() === 1 ? 'Sem divisão' : `Dividido entre ${NP()} (${PEOPLE.join(', ')}) — ${(100 / NP()).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% cada`;
+        function loadPeople() {
+            const c = appState.companies.find(x => x.id === appState.currentCompanyId);
+            let arr = c?.people;
+            if (!Array.isArray(arr)) { try { arr = JSON.parse(localStorage.getItem('app2_people_' + appState.currentCompanyId)); } catch (e) { arr = null; } }
+            if (!Array.isArray(arr) || arr.length < 1 || arr.length > MAX_PEOPLE) arr = defaultNames(2);
+            PEOPLE = arr.map((n, i) => String(n || '').trim().slice(0, 14) || `Pessoa ${i + 1}`);
+            document.documentElement.style.setProperty('--cols', NP() === 1 ? 1 : NP() + 1); // colunas de valor no PDF
+            const sub = $('headerSub'); if (sub) sub.innerText = 'Gestão Imobiliária - App 2 · ' + splitDesc();
         }
 
-        function dbGetAll(storeName) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(storeName, 'readonly');
-                const store = transaction.objectStore(storeName);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = e => reject(e.target.error);
-            });
+        // Divisão única em centavos: [total, pessoa1, ..., pessoaN]; as sobras de centavo vão para as primeiras pessoas
+        const splitCents = (c, n = NP()) => { const q = Math.floor(c / n), r = c - q * n; return [c, ...Array.from({ length: n }, (_, i) => q + (i < r ? 1 : 0))]; };
+
+        function calc(p) {
+            const N = NP(), o = {};
+            FIELDS.forEach(f => o[f.key] = splitCents(toCents(p[f.key]), N));
+            const idx = Array.from({ length: N + 1 }, (_, i) => i);
+            const comb = i => o.rent[i] + o.electricity[i] + o.water[i] + o.otherRevenue[i] - o.otherExpenses[i];
+            o.base = idx.map(comb);
+            o.total = idx.map(i => o.base[i] - o.adminTax[i]);
+            return o;
         }
 
-        function dbPut(storeName, data) {
+        /* ---------- Banco de dados no navegador (IndexedDB) ---------- */
+        // As funções apiGet/apiPost/apiDelete mantêm a interface antiga, mas gravam no IndexedDB deste navegador.
+        const DB_NAME = 'controle_aluguel_app2';
+        let dbPromise = null;
+        function openDB() {
+            if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+                if (!window.indexedDB) return reject(new Error('IndexedDB indisponível neste navegador'));
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = () => { const db = req.result; db.createObjectStore('companies', { keyPath: 'id' }); db.createObjectStore('properties', { keyPath: 'id' }); };
+                req.onsuccess = () => { req.result.onversionchange = () => req.result.close(); resolve(req.result); };
+                req.onerror = () => reject(req.error);
+            });
+            return dbPromise;
+        }
+        async function dbRun(stores, mode, fn) {
+            const db = await openDB();
             return new Promise((resolve, reject) => {
-                const transaction = db.transaction(storeName, 'readwrite');
-                const store = transaction.objectStore(storeName);
-                const request = store.put(data);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = e => reject(e.target.error);
+                const t = db.transaction(stores, mode);
+                const out = fn(t);
+                t.oncomplete = () => resolve(out && typeof out === 'object' && 'result' in out ? out.result : out);
+                t.onerror = t.onabort = () => reject(t.error);
             });
         }
-
-        function dbDelete(storeName, id) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(storeName, 'readwrite');
-                const store = transaction.objectStore(storeName);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = e => reject(e.target.error);
-            });
+        const putAll = (store, list) => dbRun(store, 'readwrite', t => { const os = t.objectStore(store); list.forEach(o => os.put(o)); });
+        const softDeleteProps = ids => dbRun('properties', 'readwrite', t => {
+            const os = t.objectStore('properties');
+            ids.forEach(id => { const r = os.get(id); r.onsuccess = () => { if (r.result) { r.result.deleted = true; os.put(r.result); } }; });
+        });
+        async function seedIfEmpty() { // primeira abertura: cria uma empresa padrão
+            const n = await dbRun('companies', 'readonly', t => t.objectStore('companies').count());
+            if (n === 0) await putAll('companies', [{ id: 'comp_padrao', name: 'Minha Empresa' }]);
         }
 
+        async function apiGet(endpoint) {
+            try {
+                if (endpoint === '/companies') return (await dbRun('companies', 'readonly', t => t.objectStore('companies').getAll())).filter(c => !c.deleted);
+                if (endpoint === '/properties') return await dbRun('properties', 'readonly', t => t.objectStore('properties').getAll());
+                throw new Error('Rota desconhecida: ' + endpoint);
+            } catch (e) { showToast('✗ Erro ao ler o banco do navegador', true); return null; }
+        }
+        async function apiSend(method, endpoint, data) {
+            try {
+                const [col, id, extra] = endpoint.split('/').filter(Boolean);
+                if (method === 'POST' && col === 'companies') await putAll('companies', [data]);
+                else if (method === 'POST' && col === 'properties' && id === 'bulk') await putAll('properties', data.properties);
+                else if (method === 'POST' && col === 'properties' && id === 'bulk-delete') await softDeleteProps(data.ids);
+                else if (method === 'POST' && col === 'properties' && !id) await putAll('properties', [data]);
+                else if (method === 'DELETE' && col === 'properties' && extra === 'hard') await dbRun('properties', 'readwrite', t => { t.objectStore('properties').delete(id); });
+                else if (method === 'DELETE' && col === 'properties') await softDeleteProps([id]);
+                else if (method === 'DELETE' && col === 'companies') await dbRun(['companies', 'properties'], 'readwrite', t => { // empresa e seus imóveis vão para a lixeira
+                    const cs = t.objectStore('companies'), ps = t.objectStore('properties');
+                    const rc = cs.get(id); rc.onsuccess = () => { if (rc.result) { rc.result.deleted = true; cs.put(rc.result); } };
+                    const cur = ps.openCursor(); cur.onsuccess = () => { const c = cur.result; if (!c) return; if (c.value.companyId === id) { const v = c.value; v.deleted = true; c.update(v); } c.continue(); };
+                });
+                else throw new Error('Operação desconhecida: ' + method + ' ' + endpoint);
+            } catch (e) { showToast('✗ Falha ao salvar no navegador', true); throw e; }
+        }
+        const apiPost = (ep, data) => apiSend('POST', ep, data);
+        async function apiDelete(ep) { await flushSaves(); return apiSend('DELETE', ep); }
+
+        /* ---------- Salvamento com debounce ---------- */
+        const pendingSaves = new Map(), saveTimers = {};
+        function scheduleSave(p) {
+            pendingSaves.set(p.id, p);
+            clearTimeout(saveTimers[p.id]);
+            saveTimers[p.id] = setTimeout(() => saveNow(p.id).catch(() => {}), 250);
+        }
+        async function saveNow(id) {
+            const p = pendingSaves.get(id); if (!p) return;
+            pendingSaves.delete(id); clearTimeout(saveTimers[id]);
+            await apiPost('/properties', p); showToast();
+        }
+        async function flushSaves(parallel) {
+            const ids = [...pendingSaves.keys()];
+            if (parallel) { ids.forEach(id => saveNow(id).catch(() => {})); return; }
+            for (const id of ids) await saveNow(id);
+        }
+        async function bulkSave(list) { await flushSaves(); await apiPost('/properties/bulk', { properties: list }); }
+
+        /* ---------- Migração do servidor antigo (uma vez) ---------- */
+        async function importFromOldServer() {
+            const base = prompt('Endereço do servidor antigo (ele precisa estar ligado):', 'http://localhost:3000/app2');
+            if (!base) return;
+            try {
+                const get = async p => { const r = await fetch(base.replace(/\/$/, '') + p); if (!r.ok) throw new Error(r.status); return r.json(); };
+                const [comps, props] = await Promise.all([get('/companies'), get('/properties')]);
+                if (!Array.isArray(comps) || !Array.isArray(props)) throw new Error('formato');
+                if (!confirm(`Importar ${comps.length} empresa(s) e ${props.length} imóvel(is) do servidor antigo para este navegador?\n\nRegistros com o mesmo ID serão sobrescritos.`)) return;
+                await putAll('companies', comps); await putAll('properties', props);
+                // remove a empresa padrão vazia criada na primeira abertura
+                if (comps.length && !props.some(p => p.companyId === 'comp_padrao') && !comps.some(c => c.id === 'comp_padrao'))
+                    await dbRun('companies', 'readwrite', t => { t.objectStore('companies').delete('comp_padrao'); });
+                await refreshLocalState(); renderAppView(); showToast('✓ Dados importados do servidor antigo');
+            } catch (e) { alert('Não foi possível ler o servidor antigo. Confira se ele está ligado e o endereço está certo, ou use "Restaurar Backup" com um arquivo .json.'); }
+        }
+        function updateBackupInfo() {
+            const el = $('backupInfo'); if (!el) return;
+            const t = localStorage.getItem('app2_last_backup'), days = t ? Math.floor((Date.now() - new Date(t)) / 864e5) : null;
+            el.innerText = t ? `Último backup: ${new Date(t).toLocaleDateString('pt-BR')} (${days === 0 ? 'hoje' : days + ' dia(s) atrás'})` : '⚠️ Nenhum backup baixado ainda — os dados ficam somente neste navegador.';
+            el.style.color = (days === null || days > 30) ? '#e67e22' : '#7f8c8d';
+        }
+
+        /* ---------- Máscaras ---------- */
         function mascaraMoeda(input) {
-            let value = input.value.replace(/\D/g, '');
-            if (value === '') { input.value = ''; return; }
-            value = (Number(value) / 100).toFixed(2) + '';
-            value = value.replace(".", ",");
-            value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-            input.value = value;
+            const d = input.value.replace(/\D/g, '');
+            input.value = d === '' ? '' : fmtCents(parseInt(d, 10));
         }
-
         function mascaraCPF(input) {
-            let value = input.value.replace(/\D/g, '');
-            if (value.length > 11) value = value.slice(0, 11);
-            if (value.length > 9) value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2}).*/, '$1.$2.$3-$4');
-            else if (value.length > 6) value = value.replace(/^(\d{3})(\d{3})(\d{1,3}).*/, '$1.$2.$3');
-            else if (value.length > 3) value = value.replace(/^(\d{3})(\d{1,3}).*/, '$1.$2');
-            input.value = value;
+            let v = input.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2}).*/, '$1.$2.$3-$4');
+            else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3}).*/, '$1.$2.$3');
+            else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3}).*/, '$1.$2');
+            input.value = v;
+        }
+        function escapeHtml(str) { return !str ? '' : String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+
+        function showToast(msg = "✓ Salvo no Banco Local", isError = false) {
+            const t = $('toast');
+            $('toast-text').innerText = `${msg} às ${new Date().toTimeString().split(' ')[0]}`;
+            t.classList.toggle('error', isError); t.classList.add('show');
+            clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => t.classList.remove('show'), isError ? 3500 : 1500);
         }
 
-        async function handleNumberBlur(el, id, key) {
-            let val = el.value.replace(/\./g, '').replace(',', '.').replace(/\s/g, '');
-            const p = appState.properties.find(x => x.id === id); 
-            if (!p) return;
-            
-            if (val === '') { p[key] = ''; el.value = ''; } 
-            else { 
-                let parsed = parseFloat(val); 
-                if (isNaN(parsed)) parsed = 0; 
-                p[key] = parsed.toFixed(2); 
-                el.value = formatCurrencyValue(parsed); 
+        /* ---------- Estado ---------- */
+        async function refreshLocalState() {
+            await flushSaves();
+            const [companies, props] = await Promise.all([apiGet('/companies'), apiGet('/properties')]);
+            if (companies) appState.companies = companies;
+            if (props) {
+                const migrated = [];
+                props.forEach(p => { // migra a chave antiga "observações" -> "observacoes"
+                    if ('observações' in p) { if (p.observacoes == null) p.observacoes = p['observações']; delete p['observações']; migrated.push(p); }
+                });
+                appState.properties = props;
+                if (migrated.length) bulkSave(migrated).catch(() => {});
             }
-            await dbPut('properties', p); 
-            showToast(); 
-            updateDashboardAndTotals();
+        }
+        // Imóveis criados com "Novo Imóvel" ficam no topo (mais recente primeiro); os demais mantêm a ordem de sempre
+        const byNewest = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
+        function propPeriod(p) {
+            let m = p.createdInMonth, y = p.createdInYear || new Date().getFullYear();
+            const parts = (p.date || '').split('-');
+            if (parts.length === 3) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1; }
+            return { m, y };
+        }
+        function getVisibleProperties() {
+            return appState.properties.filter(p => {
+                if (p.companyId !== appState.currentCompanyId) return false;
+                if (appState.showingTrash) return p.deleted === true;
+                if (p.deleted === true) return false;
+                const { m, y } = propPeriod(p);
+                return m === appState.currentMonthIndex && y === appState.currentYear;
+            }).sort(byNewest);
         }
 
         async function initApp() {
-            await initIndexedDB();
-            await seedInitialDataIfNeeded();
+            try { navigator.storage?.persist?.(); await seedIfEmpty(); } catch (e) { alert('Não foi possível abrir o banco de dados do navegador: ' + e.message); }
+            $('companiesGrid').addEventListener('click', onCompanyClick);
+            setupPropertyEvents();
             await refreshLocalState();
             renderAppView();
         }
 
-        async function seedInitialDataIfNeeded() {
-            const comps = await dbGetAll('companies');
-            if (comps.length === 0) {
-                const defaultCompId = 'comp_' + Date.now();
-                await dbPut('companies', { id: defaultCompId, name: 'Imobiliária Exemplo Ltda' });
-                await dbPut('properties', {
-                    id: 'prop_' + Date.now(),
-                    companyId: defaultCompId,
-                    name: 'João da Silva (Apto 101)',
-                    cpf: '123.456.789-00',
-                    date: '',
-                    rent: '1500.00',
-                    adminTax: '150.00',
-                    electricity: '100.00',
-                    water: '50.00',
-                    otherRevenue: '0.00',
-                    otherExpenses: '0.00',
-                    observações: 'Exemplo inicial gerado automaticamente.',
-                    minimized: false,
-                    createdInMonth: new Date().getMonth(),
-                    createdInYear: new Date().getFullYear(),
-                    deleted: false
-                });
-            }
-        }
-
-        async function refreshLocalState() {
-            appState.companies = await dbGetAll('companies');
-            appState.properties = await dbGetAll('properties');
-        }
-
-        function showToast(msg = "✓ Salvo com sucesso") {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-text').innerText = `${msg} às ${new Date().toTimeString().split(' ')[0]}`;
-            toast.classList.add('show');
-            clearTimeout(window.toastTimeout);
-            window.toastTimeout = setTimeout(() => toast.classList.remove('show'), 1500);
-        }
-
+        /* ---------- Empresas ---------- */
         async function renderCompanySelection() {
             await refreshLocalState();
-            const container = document.getElementById('companiesGrid');
-            container.innerHTML = '';
-            appState.companies.forEach(company => {
-                const companyProps = appState.properties.filter(p => p.companyId === company.id && !p.deleted);
+            const grid = $('companiesGrid'); grid.innerHTML = '';
+            appState.companies.forEach(c => {
+                const n = appState.properties.filter(p => p.companyId === c.id && !p.deleted).length;
                 const card = document.createElement('div');
-                card.className = 'company-card';
+                card.className = 'company-card'; card.dataset.id = c.id;
                 card.innerHTML = `
                     <div class="company-card-header">
-                        <div class="company-card-title">${escapeHtml(company.name)}</div>
-                        <div class="company-card-info">🏠 ${companyProps.length} imóvel(is) cadastrado(s)</div>
+                        <div class="company-card-title">${escapeHtml(c.name)}</div>
+                        <div class="company-card-info">🏠 ${n} imóvel(is) cadastrado(s)</div>
                     </div>
                     <div class="company-card-actions">
-                        <button class="btn btn-sm btn-primary" onclick="selectCompany('${company.id}')">📂 Abrir Recebimentos</button>
-                        <button class="btn btn-sm btn-outline" onclick="renameCompany('${company.id}')">✏️ Renomear</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCompany('${company.id}')">🗑️ Excluir</button>
-                    </div>
-                `;
-                container.appendChild(card);
+                        <button class="btn btn-sm btn-primary" data-action="open">📂 Abrir Recebimentos</button>
+                        <button class="btn btn-sm btn-outline" data-action="rename">✏️ Renomear</button>
+                        <button class="btn btn-sm btn-danger" data-action="delete">🗑️ Excluir</button>
+                    </div>`;
+                grid.appendChild(card);
             });
+            updateBackupInfo();
         }
-
+        function onCompanyClick(e) {
+            const b = e.target.closest('[data-action]'), card = e.target.closest('.company-card');
+            if (!b || !card) return;
+            ({ open: selectCompany, rename: renameCompany, delete: deleteCompany })[b.dataset.action]?.(card.dataset.id);
+        }
         async function addNewCompany() {
             const name = prompt("Digite o nome da nova empresa:");
-            if (name && name.trim() !== "") {
-                await dbPut('companies', { id: 'comp_' + Date.now(), name: name.trim() });
-                showToast(); renderCompanySelection();
-            }
+            if (name && name.trim() !== "") { await apiPost('/companies', { id: 'comp_' + Date.now(), name: name.trim() }); showToast(); renderCompanySelection(); }
         }
-
-        async function renameCompany(companyId) {
-            const company = appState.companies.find(c => c.id === companyId);
-            const newName = prompt("Novo nome:", company.name);
-            if (newName && newName.trim() !== "") {
-                company.name = newName.trim(); await dbPut('companies', company);
-                showToast(); renderCompanySelection();
-            }
+        async function renameCompany(id) {
+            const c = appState.companies.find(x => x.id === id);
+            const n = prompt("Novo nome:", c.name);
+            if (n && n.trim() !== "") { c.name = n.trim(); await apiPost('/companies', c); showToast(); renderCompanySelection(); }
         }
-
-        async function deleteCompany(companyId) {
+        async function deleteCompany(id) {
             if (appState.companies.length <= 1) return alert("É necessário ter pelo menos uma empresa.");
-            if (confirm("Tem certeza que deseja excluir esta empresa e mover seus imóveis para a Lixeira?")) {
-                const propsToTrash = appState.properties.filter(p => p.companyId === companyId);
-                for(let p of propsToTrash) {
-                    p.deleted = true;
-                    await dbPut('properties', p);
-                }
-                await dbDelete('companies', companyId);
-                if (appState.currentCompanyId === companyId) appState.currentCompanyId = null;
-                showToast("✓ Empresa excluída"); renderAppView();
+            if (confirm("Tem certeza que deseja excluir esta empresa e mover tudo para a Lixeira?")) {
+                await apiDelete('/companies/' + id);
+                if (appState.currentCompanyId === id) appState.currentCompanyId = null;
+                showToast("✓ Movido para Lixeira"); renderAppView();
             }
         }
-
-        function selectCompany(companyId) { appState.currentCompanyId = companyId; renderAppView(); }
+        function selectCompany(id) { appState.currentCompanyId = id; appState.view = 'monthly'; renderAppView(); }
         function goBackToCompanies() { appState.currentCompanyId = null; renderAppView(); }
-        function escapeHtml(str) { return !str ? '' : String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
 
+        /* ---------- Navegação ---------- */
         async function renderAppView() {
-            const companyView = document.getElementById('companySelectionView');
-            const mainView = document.getElementById('mainAppView');
             if (!appState.currentCompanyId) {
-                companyView.style.display = 'block'; mainView.style.display = 'none';
+                $('companySelectionView').style.display = 'block'; $('mainAppView').style.display = 'none';
                 renderCompanySelection();
             } else {
-                companyView.style.display = 'none'; mainView.style.display = 'block';
-                document.getElementById('selectedCompanyNameDisplay').innerText = appState.companies.find(c => c.id === appState.currentCompanyId)?.name || "Empresa";
-                renderYearMenu(); renderMonthsMenu(); await renderContent();
+                $('companySelectionView').style.display = 'none'; $('mainAppView').style.display = 'block';
+                $('selectedCompanyNameDisplay').innerText = appState.companies.find(c => c.id === appState.currentCompanyId)?.name || "Empresa";
+                loadPeople(); renderYearMenu(); renderMonthsMenu(); applyViewLayout();
+                if (appState.view === 'annual') renderAnnual(); else await renderContent();
             }
         }
-
         function renderYearMenu() {
-            const select = document.getElementById('yearFilter');
-            select.innerHTML = '';
-            const todayYear = new Date().getFullYear();
-            for(let y = todayYear - 3; y <= todayYear + 5; y++) {
-                const opt = document.createElement('option');
-                opt.value = y; opt.innerText = y;
-                if (y === appState.currentYear) opt.selected = true;
-                select.appendChild(opt);
-            }
+            const s = $('yearFilter'); s.innerHTML = '';
+            const ty = new Date().getFullYear();
+            for (let y = ty - 3; y <= ty + 5; y++) { const o = document.createElement('option'); o.value = y; o.innerText = y; if (y === appState.currentYear) o.selected = true; s.appendChild(o); }
         }
-        async function switchYear(y) { appState.currentYear = parseInt(y, 10); await renderContent(); }
-
+        async function switchYear(y) { appState.currentYear = parseInt(y, 10); await renderCurrentView(); }
         function renderMonthsMenu() {
-            const nav = document.getElementById('monthsNav');
-            nav.innerHTML = '';
-            MONTHS.forEach((m, idx) => {
-                const tab = document.createElement('div');
-                tab.className = `month-tab ${idx === appState.currentMonthIndex ? 'active' : ''}`;
-                tab.innerText = m; tab.onclick = () => switchMonth(idx); nav.appendChild(tab);
+            const nav = $('monthsNav'); nav.innerHTML = '';
+            MONTHS.forEach((m, i) => {
+                const t = document.createElement('div');
+                t.className = `month-tab ${i === appState.currentMonthIndex ? 'active' : ''}`;
+                t.innerText = m; t.onclick = () => switchMonth(i); nav.appendChild(t);
             });
         }
-        async function switchMonth(index) { appState.currentMonthIndex = index; renderMonthsMenu(); await renderContent(); }
+        async function switchMonth(i) { appState.currentMonthIndex = i; renderMonthsMenu(); if (appState.view === 'annual') await setView('monthly'); else await renderContent(false); }
 
         async function toggleTrash() {
             appState.showingTrash = !appState.showingTrash;
-            const btn = document.getElementById('btnTrash');
-            if (appState.showingTrash) {
-                btn.innerText = "⬅️ Voltar aos Imóveis"; btn.classList.replace('btn-outline', 'btn-warning');
-                document.getElementById('navContainer').style.opacity = '0.4'; document.getElementById('navContainer').style.pointerEvents = 'none';
-                document.getElementById('btnNewProp').style.display = 'none'; document.getElementById('btnClearMonth').style.display = 'none';
-            } else {
-                btn.innerText = "🗑️ Lixeira"; btn.classList.replace('btn-warning', 'btn-outline');
-                document.getElementById('navContainer').style.opacity = '1'; document.getElementById('navContainer').style.pointerEvents = 'auto';
-                document.getElementById('btnNewProp').style.display = 'inline-flex'; document.getElementById('btnClearMonth').style.display = 'inline-flex';
-            }
+            const btn = $('btnTrash'), on = appState.showingTrash;
+            btn.innerText = on ? "⬅️ Voltar aos Imóveis" : "🗑️ Lixeira";
+            btn.classList.replace(on ? 'btn-outline' : 'btn-warning', on ? 'btn-warning' : 'btn-outline');
+            $('navContainer').style.opacity = on ? '0.4' : '1'; $('navContainer').style.pointerEvents = on ? 'none' : 'auto';
+            $('btnNewProp').style.display = on ? 'none' : 'inline-flex'; $('btnClearMonth').style.display = on ? 'none' : 'inline-flex';
             await renderContent();
         }
 
+        /* ---------- Imóveis ---------- */
         async function restoreProperty(id) {
-            const prop = appState.properties.find(p => p.id === id);
-            if (prop) { prop.deleted = false; await dbPut('properties', prop); showToast("✓ Restaurado"); await renderContent(); }
+            const p = appState.properties.find(x => x.id === id);
+            if (p) { p.deleted = false; await apiPost('/properties', p); showToast("✓ Restaurado"); await renderContent(); }
+        }
+        async function hardDeleteProperty(id) {
+            if (confirm("Deseja excluir PERMANENTEMENTE?")) { await apiDelete('/properties/' + id + '/hard'); showToast("✓ Excluído"); await renderContent(); }
+        }
+        async function removeProperty(id) {
+            if (confirm("Deseja enviar este imóvel para a Lixeira?")) { await apiDelete('/properties/' + id); showToast("✓ Na Lixeira"); await renderContent(); }
+        }
+        async function addNewProperty() {
+            const p = {
+                id: 'prop_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), companyId: appState.currentCompanyId,
+                name: '', cpf: '', date: '', rent: '', adminTax: '', electricity: '', water: '', otherRevenue: '', otherExpenses: '', observacoes: '',
+                minimized: false, createdInMonth: appState.currentMonthIndex, createdInYear: appState.currentYear, deleted: false, createdAt: Date.now()
+            };
+            await apiPost('/properties', p); showToast(); await renderContent();
+            setTimeout(() => { // leva o novo cartão (no topo) para a tela, abaixo do cabeçalho fixo, e abre o teclado no nome
+                const card = document.querySelector('.property-card'); if (!card) return;
+                const hdr = document.querySelector('.sticky-header');
+                window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - (hdr ? hdr.offsetHeight : 0) - 8, behavior: 'smooth' });
+                card.querySelector('.prop-title-input')?.focus({ preventScroll: true });
+            }, 50);
         }
 
-        async function hardDeleteProperty(id) {
-            if(confirm("Deseja excluir PERMANENTEMENTE?")) { await dbDelete('properties', id); showToast("✓ Excluído"); await renderContent(); }
-        }
+        const tenantKey = p => { const cpf = (p.cpf || '').replace(/\D/g, ''); return cpf || (p.name || '').trim().toLowerCase(); };
 
         async function importarDoMesAnterior() {
-            let mesAnterior = appState.currentMonthIndex - 1;
-            let anoAnterior = appState.currentYear;
-            if (mesAnterior < 0) { mesAnterior = 11; anoAnterior -= 1; }
-
-            const imoveisAnteriores = appState.properties.filter(p => {
+            let mes = appState.currentMonthIndex - 1, ano = appState.currentYear;
+            if (mes < 0) { mes = 11; ano -= 1; }
+            const anteriores = appState.properties.filter(p => {
                 if (p.companyId !== appState.currentCompanyId || p.deleted) return false;
-                let pMonth = p.createdInMonth, pYear = p.createdInYear || new Date().getFullYear();
-                if (p.date) {
-                    const parts = p.date.split('-');
-                    if (parts.length === 3) { pYear = parseInt(parts[0], 10); pMonth = parseInt(parts[1], 10) - 1; }
-                }
-                return pMonth === mesAnterior && pYear === anoAnterior;
+                const { m, y } = propPeriod(p); return m === mes && y === ano;
             });
+            if (!anteriores.length) return alert(`Não há registros cadastrados no mês anterior (${MONTHS[mes]}/${ano}) para importar.`);
 
-            if (imoveisAnteriores.length === 0) {
-                alert(`Não há registros cadastrados no mês anterior (${MONTHS[mesAnterior]}/${anoAnterior}) para importar.`);
-                return;
-            }
-
-            const imoveisAtuais = getVisibleProperties();
-            if (imoveisAtuais.length > 0) {
-                if (!confirm(`Já existem ${imoveisAtuais.length} imóvel(is) neste mês. Deseja adicionar os cadastros do mês anterior?`)) return;
-            }
-
-            let contadorImportados = 0;
-            for (let pAnt of imoveisAnteriores) {
-                const novoImovel = {
-                    id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    companyId: appState.currentCompanyId,
-                    name: pAnt.name || '', cpf: pAnt.cpf || '', date: '', rent: '', adminTax: '', electricity: '', water: '', otherRevenue: '', otherExpenses: '', observações: '',
+            // Evita duplicados: compara CPF (ou nome, se não houver CPF) com o que já existe no mês e entre os próprios importados
+            const existentes = new Set(getVisibleProperties().map(tenantKey).filter(Boolean));
+            const novos = [];
+            for (const a of anteriores) {
+                const k = tenantKey(a);
+                if (!k || existentes.has(k)) continue;
+                existentes.add(k);
+                novos.push({
+                    id: 'prop_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), companyId: appState.currentCompanyId,
+                    name: a.name || '', cpf: a.cpf || '', date: '', rent: '', adminTax: '', electricity: '', water: '', otherRevenue: '', otherExpenses: '', observacoes: '',
                     minimized: false, createdInMonth: appState.currentMonthIndex, createdInYear: appState.currentYear, deleted: false
-                };
-                await dbPut('properties', novoImovel);
-                contadorImportados++;
+                });
             }
-            showToast(`✓ ${contadorImportados} itens importados!`);
+            const ignorados = anteriores.length - novos.length;
+            if (!novos.length) return alert(`Todos os ${anteriores.length} cadastros do mês anterior já existem neste mês.`);
+            await bulkSave(novos);
+            showToast(`✓ ${novos.length} importado(s)` + (ignorados ? `, ${ignorados} já existia(m)` : ''));
             await renderContent();
         }
 
-        async function addNewProperty() {
-            const newProp = {
-                id: 'prop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                companyId: appState.currentCompanyId,
-                name: '', cpf: '', date: '', rent: '', adminTax: '', electricity: '', water: '', otherRevenue: '', otherExpenses: '', observações: '',
-                minimized: false, createdInMonth: appState.currentMonthIndex, createdInYear: appState.currentYear, deleted: false
-            };
-            await dbPut('properties', newProp); showToast(); await renderContent();
-            setTimeout(() => { const inputs = document.querySelectorAll('.prop-title-input'); if (inputs.length > 0) inputs[inputs.length-1].focus(); }, 50);
+        async function handleFieldChange(id, key, val) {
+            const p = appState.properties.find(x => x.id === id); if (!p) return;
+            p[key] = val; scheduleSave(p);
+            if (key === 'date' && val) {
+                const [y, m] = val.split('-').map(Number);
+                if (m - 1 !== appState.currentMonthIndex || y !== appState.currentYear) { await flushSaves(); alert('Imóvel realocado.'); await renderContent(); return; }
+            }
+            updateDashboardAndTotals();
+        }
+        function handleMoneyBlur(el, id, key) {
+            const p = appState.properties.find(x => x.id === id); if (!p) return;
+            const d = el.value.replace(/\D/g, '');
+            if (d === '') { p[key] = ''; el.value = ''; }
+            else { const c = parseInt(d, 10); p[key] = (c / 100).toFixed(2); el.value = fmtCents(c); }
+            scheduleSave(p); updateDashboardAndTotals();
+        }
+        function toggleMinimize(id) {
+            const p = appState.properties.find(x => x.id === id); if (!p) return;
+            p.minimized = !p.minimized; scheduleSave(p);
+            $(`card_${id}`)?.classList.toggle('minimized', p.minimized);
+            const b = $(`btnMin_${id}`); if (b) b.innerText = p.minimized ? "▼ Expandir" : "▲ Minimizar";
+        }
+        async function setAllMinimization(min) {
+            const changed = getVisibleProperties().filter(p => !!p.minimized !== min);
+            changed.forEach(p => p.minimized = min);
+            if (changed.length) { await bulkSave(changed); showToast(); }
+            await renderContent(false);
+        }
+        async function clearCurrentMonth() {
+            if (confirm(`Remover todos os imóveis de ${MONTHS[appState.currentMonthIndex]} de ${appState.currentYear}?`)) {
+                const ids = getVisibleProperties().map(p => p.id);
+                await flushSaves(); await apiPost('/properties/bulk-delete', { ids }); showToast(); await renderContent();
+            }
         }
 
-        async function removeProperty(id) {
-            const p = appState.properties.find(x => x.id === id);
-            if (p) { p.deleted = true; await dbPut('properties', p); showToast("✓ Movido para Lixeira"); await renderContent(); }
-        }
-
-        function getVisibleProperties() {
-            return appState.properties.filter(p => {
-                if (p.companyId !== appState.currentCompanyId) return false;
-                if (appState.showingTrash) return p.deleted === true; 
-                if (p.deleted === true) return false;
-
-                let pMonth = p.createdInMonth, pYear = p.createdInYear || new Date().getFullYear();
-                if (p.date) {
-                    const parts = p.date.split('-');
-                    if (parts.length === 3) { pYear = parseInt(parts[0], 10); pMonth = parseInt(parts[1], 10) - 1; }
-                }
-                return pMonth === appState.currentMonthIndex && pYear === appState.currentYear;
-            });
-        }
+        /* ---------- Cálculos e totalizador ---------- */
+        const GT_LABELS = { rent: 'Total Aluguéis (+)', electricity: 'Total Energia (+)', water: 'Total Água (+)', otherRevenue: 'Total Outras Receitas (+)', otherExpenses: 'Total Outras Despesas (-)', base: 'BASE TRIB. CARNÊ LEÃO (=)', adminTax: 'Total Taxa Adm. (-)', total: 'TOTAL LÍQUIDO RECEBIDO(=)' };
+        const DEDUCTIONS = ['otherExpenses', 'adminTax'];
 
         function updateDashboardAndTotals() {
-            const propertiesInMonth = getVisibleProperties();
-            let sums = { rent: 0, admin: 0, elec: 0, water: 0, othRev: 0, othExp: 0, base: 0, grandTotal: 0 };
-
-            propertiesInMonth.forEach(p => {
-                const rent = parseFloat(p.rent) || 0; const adminTax = parseFloat(p.adminTax) || 0;
-                const elec = parseFloat(p.electricity) || 0; const water = parseFloat(p.water) || 0;
-                const othRev = parseFloat(p.otherRevenue) || 0; const othExp = parseFloat(p.otherExpenses) || 0;
-
-                const baseTotal = rent + elec + water + othRev - othExp;
-                const computedTotal = baseTotal - adminTax;
-
-                sums.rent += rent; sums.elec += elec; sums.water += water; sums.othRev += othRev;
-                sums.othExp += othExp; sums.base += baseTotal; sums.admin += adminTax; sums.grandTotal += computedTotal;
-                
-                const bInp = document.getElementById(`base_${p.id}`); if(bInp) bInp.value = formatCurrencyValue(baseTotal);
-                const tInp = document.getElementById(`total_${p.id}`); if(tInp) tInp.value = formatCurrencyValue(computedTotal);
-                const bdg = document.getElementById(`summary_${p.id}`); if(bdg) bdg.innerText = `Total: ${formatCurrencyValue(computedTotal)}`;
+            const list = getVisibleProperties(), N = NP();
+            const S = {}; SUMS.forEach(([k]) => S[k] = zeros());
+            list.forEach(p => {
+                const o = calc(p);
+                SUMS.forEach(([k]) => { for (let i = 0; i <= N; i++) S[k][i] += o[k][i]; });
+                const set = (id, v) => { const el = $(`${id}_${p.id}`); if (el) el.value = v; };
+                FIELDS.forEach(f => { const has = p[f.key] !== '' && p[f.key] != null; for (let k = 1; k <= N; k++) set(`${f.id}P${k}`, has ? fmtCents(o[f.key][k]) : ''); });
+                ['base', 'total'].forEach(key => { set(key, fmtCents(o[key][0])); for (let k = 1; k <= N; k++) set(`${key}P${k}`, fmtCents(o[key][k])); });
+                const b = $(`summary_${p.id}`); if (b) b.innerText = `Total: ${fmtCents(o.total[0])}`;
             });
-
-            renderMonthlyTotalizer({ count: propertiesInMonth.length, ...sums });
+            renderMonthlyTotalizer(list.length, S);
         }
 
-        function renderMonthlyTotalizer(t) {
-            const card = document.getElementById('monthlySummaryContainer');
-            if (t.count === 0 || appState.showingTrash) { card.style.display = 'none'; return; }
+        // O corpo do totalizador é montado conforme o número de pessoas
+        function buildTotalizer() {
+            const body = $('gtBody'), sig = PEOPLE.join('|');
+            if (body.dataset.sig === sig) return;
+            body.dataset.sig = sig;
+            const multi = NP() > 1;
+            const person = (n, k) => multi ? PEOPLE.map((_, i) => `<span class="gt-val print-only-val" id="sum${n}P${i + 1}">0,00</span>`).join('') : '';
+            let html = `<div class="gt-row gt-header-row"><div>Descrição</div><div style="text-align: right;">${multi ? 'Total Geral' : 'Total'}</div>${multi ? PEOPLE.map(n => `<div style="text-align: right;">${escapeHtml(n)}</div>`).join('') : ''}</div>`;
+            SUMS.forEach(([k, n]) => {
+                const cls = k === 'total' ? 'gt-row gt-total-row' : DEDUCTIONS.includes(k) ? 'gt-row deduction' : 'gt-row';
+                html += `<div class="${cls}"><label>${GT_LABELS[k]}</label><span class="gt-val" id="sum${n}">0,00</span>${person(n)}</div>`;
+            });
+            body.innerHTML = html;
+        }
+        function renderMonthlyTotalizer(count, S) {
+            const card = $('monthlySummaryContainer');
+            if (count === 0 || appState.showingTrash) { card.style.display = 'none'; return; }
             card.style.display = 'block';
-            document.getElementById('summaryMonthTitle').innerText = `📊 Totalizador Geral - ${MONTHS[appState.currentMonthIndex]}/${appState.currentYear}`;
-            document.getElementById('sumPropCount').innerText = `${t.count} imóveis`;
-            
-            ['Rent','Elec','Water','OthRev','OthExp','Base','Admin','GrandTotal'].forEach(k => {
-                document.getElementById(`sum${k}`).innerText = `${formatCurrencyValue(t[k.toLowerCase()] || t[k.charAt(0).toLowerCase() + k.slice(1)])}`;
+            buildTotalizer();
+            $('summaryMonthTitle').innerText = `📊 Totalizador Geral - ${MONTHS[appState.currentMonthIndex]}/${appState.currentYear}`;
+            $('sumPropCount').innerText = `${count} ${count === 1 ? 'imóvel' : 'imóveis'}`;
+            // colunas por pessoa = soma das colunas dos cartões (o PDF sempre fecha com os cartões)
+            SUMS.forEach(([k, n]) => {
+                $(`sum${n}`).innerText = fmtCents(S[k][0]);
+                for (let i = 1; i <= NP(); i++) { const el = $(`sum${n}P${i}`); if (el) el.innerText = fmtCents(S[k][i]); }
             });
         }
 
-        function formatCurrencyValue(num) { return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-        async function handleFieldChange(id, key, val) {
-            const p = appState.properties.find(x => x.id === id);
-            if(p) {
-                p[key] = val; await dbPut('properties', p); showToast();
-                if (key === 'date' && val) {
-                    const pm = parseInt(val.split('-')[1], 10) - 1; const py = parseInt(val.split('-')[0], 10);
-                    if (pm !== appState.currentMonthIndex || py !== appState.currentYear) { alert(`Imóvel realocado.`); await renderContent(); return; }
-                }
-                updateDashboardAndTotals();
-            }
+        /* ---------- Renderização dos cartões ---------- */
+        function personInputs(idp, pid, initial) {
+            return NP() > 1 ? PEOPLE.map((_, i) => `<input type="text" id="${idp}P${i + 1}_${pid}" ${initial ? `value="${initial}"` : ''} readonly class="print-only-val">`).join('') : '';
+        }
+        function columnsHeader() {
+            const multi = NP() > 1;
+            return `<div class="columns-header"><div>Item / Campo</div><div style="text-align: right;">${multi ? 'Total Geral' : 'Total'}</div>${multi ? PEOPLE.map(n => `<div style="text-align: right;">${escapeHtml(n)}</div>`).join('') : ''}</div>`;
+        }
+        function moneyRow(p, f) {
+            const v = p[f.key] ? fmtCents(toCents(p[f.key])) : '';
+            return `<div class="form-row ${f.ded ? 'deduction' : ''}"><label>${f.label}</label>
+                <input type="text" value="${v}" data-mask="money" data-money="${f.key}">${personInputs(f.id, p.id)}</div>`;
+        }
+        function totalRow(p, key, label, style) {
+            return `<div class="form-row total-row" ${style ? `style="${style}"` : ''}><label>${label}</label>
+                <input type="text" id="${key}_${p.id}" value="0,00" readonly>${personInputs(key, p.id, '0,00')}</div>`;
         }
 
-        async function toggleMinimize(id) {
-            const p = appState.properties.find(x => x.id === id);
-            if(p) {
-                p.minimized = !p.minimized; await dbPut('properties', p); showToast();
-                const card = document.getElementById(`card_${id}`);
-                if(card) { card.classList.toggle('minimized', p.minimized); document.getElementById(`btnMin_${id}`).innerText = p.minimized ? "▼ Expandir" : "▲ Minimizar"; }
-            }
-        }
-
-        async function setAllMinimization(min) { 
-            const props = getVisibleProperties(); 
-            for (let p of props) { p.minimized = min; await dbPut('properties', p); } 
-            showToast(); await renderContent(); 
-        }
-
-        async function clearCurrentMonth() {
-            if(confirm(`Mover todos os imóveis visíveis de ${MONTHS[appState.currentMonthIndex]}/${appState.currentYear} para a lixeira?`)) {
-                const props = getVisibleProperties();
-                for (let p of props) { p.deleted = true; await dbPut('properties', p); }
-                showToast("✓ Movidos para lixeira"); await renderContent();
-            }
-        }
-
-        function exportPDF() {
-            document.getElementById('print-company-title').innerText = appState.companies.find(c => c.id === appState.currentCompanyId)?.name || "Empresa";
-            document.getElementById('print-month-title').innerText = `Relatório de Recebimentos - ${MONTHS[appState.currentMonthIndex]}/${appState.currentYear}`;
-            document.getElementById('print-datetime').innerText = `Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
-            window.print();
-        }
-
-        async function renderContent() {
-            await refreshLocalState();
-            const container = document.getElementById('propertiesContainer'); container.innerHTML = '';
+        async function renderContent(refetch = true) {
+            if (refetch) await refreshLocalState();
+            const container = $('propertiesContainer'); container.innerHTML = '';
             const props = getVisibleProperties();
-
-            if(props.length === 0) {
+            if (!props.length) {
                 container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:40px; color:#7f8c8d; background:white; border-radius:8px; border:2px dashed var(--border)">
-                    ${appState.showingTrash ? 'Lixeira vazia.' : `Nenhum imóvel em <strong>${MONTHS[appState.currentMonthIndex]}/${appState.currentYear}</strong>.<br><br>Clique em <strong>➕ Novo Imóvel</strong> ou use o botão <strong>📥 Importar do Mês Anterior</strong>.`}
-                </div>`;
+                    ${appState.showingTrash ? 'Lixeira vazia.' : `Nenhum imóvel em <strong>${MONTHS[appState.currentMonthIndex]}/${appState.currentYear}</strong>.<br><br>Clique em <strong>➕ Novo Imóvel</strong> ou use o botão <strong>📥 Importar do Mês Anterior</strong>.`}</div>`;
                 updateDashboardAndTotals(); return;
             }
-
+            const ro = appState.showingTrash ? 'readonly' : '';
             props.forEach(p => {
                 const card = document.createElement('div');
-                card.id = `card_${p.id}`;
+                card.id = `card_${p.id}`; card.dataset.id = p.id;
                 card.className = `property-card ${p.minimized ? 'minimized' : ''} ${appState.showingTrash ? 'in-trash' : ''}`;
-
-                let controlsHTML = appState.showingTrash ? 
-                    `<button class="btn btn-sm btn-success" onclick="restoreProperty('${p.id}')">♻️ Restaurar</button><button class="btn btn-sm btn-danger" onclick="hardDeleteProperty('${p.id}')">❌ Excluir Permanentemente</button>` :
-                    `<span class="minimized-summary" id="summary_${p.id}">Total: 0,00</span><button class="btn btn-sm btn-dark" id="btnMin_${p.id}" onclick="toggleMinimize('${p.id}')">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button><button class="btn btn-sm btn-danger" onclick="removeProperty('${p.id}')">🗑️ Excluir</button>`;
-
+                const controls = appState.showingTrash
+                    ? `<button class="btn btn-sm btn-success" data-action="restore">♻️ Restaurar</button><button class="btn btn-sm btn-danger" data-action="hardDelete">❌ Excluir Permanentemente</button>`
+                    : `<span class="minimized-summary" id="summary_${p.id}">Total: 0,00</span><button class="btn btn-sm btn-dark" id="btnMin_${p.id}" data-action="minimize">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button><button class="btn btn-sm btn-danger" data-action="remove">🗑️ Excluir</button>`;
                 card.innerHTML = `
                     <div class="card-header" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <span class="print-only-label">INQUILINO:</span>
-                        <input type="text" class="prop-title-input" style="flex: 2; min-width: 140px;" value="${escapeHtml(p.name || '')}" placeholder="Nome do Inquilino / Imóvel" onchange="handleFieldChange('${p.id}', 'name', this.value)" ${appState.showingTrash?'readonly':''}>
+                        <input type="text" class="prop-title-input" style="flex: 2; min-width: 140px;" value="${escapeHtml(p.name)}" placeholder="Nome do Inquilino / Imóvel" data-field="name" ${ro}>
                         <span class="print-only-label">CPF:</span>
-                        <input type="text" class="prop-title-input" style="flex: 1; min-width: 110px;" value="${escapeHtml(p.cpf || '')}" placeholder="000.000.00-00" maxlength="14" oninput="mascaraCPF(this)" onchange="handleFieldChange('${p.id}', 'cpf', this.value)" ${appState.showingTrash?'readonly':''}>
-                        <div class="card-controls">${controlsHTML}</div>
+                        <input type="text" class="prop-title-input" style="flex: 1; min-width: 110px;" value="${escapeHtml(p.cpf)}" placeholder="000.000.00-00" maxlength="14" data-mask="cpf" data-field="cpf" ${ro}>
+                        <div class="card-controls">${controls}</div>
                     </div>
                     <div class="card-body" ${appState.showingTrash ? 'style="opacity:0.6; pointer-events:none;"' : ''}>
                         <div class="form-grid">
-                            <div class="form-row"><label>Data de Recebimento</label><input type="date" value="${p.date || ''}" onchange="handleFieldChange('${p.id}', 'date', this.value)" onkeydown="return false;" onclick="if(this.showPicker) this.showPicker();"></div>
-                            <div class="form-row"><label>Valor do Aluguel (+)</label><input type="text" value="${p.rent?parseFloat(p.rent).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'rent')"></div>
-                            <div class="form-row"><label>Energia Elétrica (+)</label><input type="text" value="${p.electricity?parseFloat(p.electricity).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'electricity')"></div>
-                            <div class="form-row"><label>Água (+)</label><input type="text" value="${p.water?parseFloat(p.water).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'water')"></div>
-                            <div class="form-row"><label>Outras Receitas (+)</label><input type="text" value="${p.otherRevenue?parseFloat(p.otherRevenue).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'otherRevenue')"></div>
-                            <div class="form-row deduction"><label>Outras Despesas (-)</label><input type="text" value="${p.otherExpenses?parseFloat(p.otherExpenses).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'otherExpenses')"></div>
-                            <div class="form-row total-row" style="background: #fcf3cf;"><label>BASE TRIBUTÁVEL CARNÊ LEÃO (=)</label><input type="text" id="base_${p.id}" value="0,00" readonly></div>
-                            <div class="form-row deduction"><label>Desconto Taxa de Administração (-)</label><input type="text" value="${p.adminTax?parseFloat(p.adminTax).toLocaleString('pt-BR',{minimumFractionDigits:2}):''}" oninput="mascaraMoeda(this)" onblur="handleNumberBlur(this, '${p.id}', 'adminTax')"></div>
-                            <div class="form-row total-row"><label>TOTAL RECEBIDO (=)</label><input type="text" id="total_${p.id}" value="0,00" readonly></div>
-                            <div class="form-row" style="grid-template-columns: 1fr; border:none; padding-top:6px;">
-                                <label style="margin-bottom:3px;">Observações Gerais / Histórico:</label>
-                                <textarea rows="2" placeholder="Digite observações..." onchange="handleFieldChange('${p.id}', 'observações', this.value)">${escapeHtml(p.observações || '')}</textarea>
+                            ${columnsHeader()}
+                            <div class="form-row date-row"><label>Data de Recebimento</label><input type="date" value="${p.date || ''}" data-field="date"></div>
+                            ${FIELDS.slice(0, 5).map(f => moneyRow(p, f)).join('')}
+                            ${totalRow(p, 'base', 'BASE TRIB. CARNÊ LEÃO (=)', 'background: #fcf3cf;')}
+                            ${moneyRow(p, FIELDS[5])}
+                            ${totalRow(p, 'total', 'TOTAL RECEBIDO (=)')}
+                            <div class="form-row obs-row ${p.observacoes ? '' : 'obs-empty'}" style="grid-template-columns: 1fr; border:none; padding-top:2px;">
+                                <label style="margin-bottom:1px;">Observações Gerais / Histórico:</label>
+                                <textarea rows="2" placeholder="Digite observações..." data-field="observacoes">${escapeHtml(p.observacoes)}</textarea>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(card);
             });
             updateDashboardAndTotals();
         }
 
+        // Delegação de eventos (sem ids interpolados em onclick)
+        function setupPropertyEvents() {
+            const c = $('propertiesContainer');
+            const idOf = e => e.target.closest('.property-card')?.dataset.id;
+            c.addEventListener('click', e => {
+                const id = idOf(e); if (!id) return;
+                const b = e.target.closest('[data-action]');
+                if (b) { ({ restore: restoreProperty, hardDelete: hardDeleteProperty, minimize: toggleMinimize, remove: removeProperty })[b.dataset.action]?.(id); return; }
+                if (e.target.type === 'date' && e.target.showPicker) e.target.showPicker();
+            });
+            c.addEventListener('input', e => { const m = e.target.dataset.mask; if (m === 'money') mascaraMoeda(e.target); else if (m === 'cpf') mascaraCPF(e.target); });
+            c.addEventListener('change', e => { const id = idOf(e), f = e.target.dataset.field; if (id && f) handleFieldChange(id, f, e.target.value); });
+            c.addEventListener('focusout', e => { const id = idOf(e), k = e.target.dataset.money; if (id && k) handleMoneyBlur(e.target, id, k); });
+            c.addEventListener('keydown', e => { if (e.target.type === 'date' && e.key !== 'Tab') e.preventDefault(); });
+            $('annualTable').addEventListener('click', e => { const b = e.target.closest('[data-month]'); if (b) switchMonth(parseInt(b.dataset.month, 10)); });
+        }
+
+        /* ================= RESUMO ANUAL ================= */
+        // [chave, índice (0 = total, 1..N = pessoa), título] — colunas por pessoa só aparecem com 2+ pessoas
+        function annualCols() {
+            const cols = [['rent', 0, 'Aluguéis'], ['electricity', 0, 'Energia'], ['water', 0, 'Água'], ['otherRevenue', 0, 'Outras Rec.'], ['otherExpenses', 0, 'Outras Desp.'], ['base', 0, 'Base Trib.']];
+            if (NP() > 1) PEOPLE.forEach((n, i) => cols.push(['base', i + 1, `Base · ${n}`]));
+            cols.push(['adminTax', 0, 'Taxa Adm.'], ['total', 0, 'Total Recebido']);
+            if (NP() > 1) PEOPLE.forEach((n, i) => cols.push(['total', i + 1, `Total · ${n}`]));
+            return cols;
+        }
+        const currentCompanyName = () => appState.companies.find(c => c.id === appState.currentCompanyId)?.name || 'Empresa';
+        function sumList(list) {
+            const S = {}; SUMS.forEach(([k]) => S[k] = zeros());
+            list.forEach(p => { const o = calc(p); SUMS.forEach(([k]) => { for (let i = 0; i <= NP(); i++) S[k][i] += o[k][i]; }); });
+            return S;
+        }
+        // Imóveis do mês atual, independentemente de a lixeira estar aberta
+        function getMonthProperties() {
+            return appState.properties.filter(p => {
+                if (p.companyId !== appState.currentCompanyId || p.deleted) return false;
+                const { m, y } = propPeriod(p); return m === appState.currentMonthIndex && y === appState.currentYear;
+            }).sort(byNewest);
+        }
+        function computeAnnual() {
+            const y = appState.currentYear;
+            const props = appState.properties.filter(p => p.companyId === appState.currentCompanyId && !p.deleted);
+            const rows = MONTHS.map((name, m) => {
+                const ps = props.filter(p => { const r = propPeriod(p); return r.m === m && r.y === y; });
+                return { name, month: m, count: ps.length, S: sumList(ps) };
+            });
+            const totals = {}; SUMS.forEach(([k]) => totals[k] = zeros());
+            let count = 0;
+            rows.forEach(r => { count += r.count; SUMS.forEach(([k]) => { for (let i = 0; i <= NP(); i++) totals[k][i] += r.S[k][i]; }); });
+            return { rows, totals, count };
+        }
+        function renderAnnual() {
+            const { rows, totals, count } = computeAnnual(), cols = annualCols();
+            $('annualTitle').innerText = `📊 Resumo Anual ${appState.currentYear} — ${currentCompanyName()}`;
+            const cells = S => cols.map(([k, i]) => `<td>${fmtCents(S[k][i])}</td>`).join('');
+            $('annualTable').innerHTML =
+                `<thead><tr><th>Mês</th><th>Imóveis</th>${cols.map(c => `<th>${escapeHtml(c[2])}</th>`).join('')}</tr></thead>` +
+                `<tbody>${rows.map(r => `<tr class="${r.count ? '' : 'muted'}"><td><button type="button" class="link-btn" data-month="${r.month}" title="Abrir ${r.name}">${r.name}</button></td><td>${r.count}</td>${cells(r.S)}</tr>`).join('')}</tbody>` +
+                `<tfoot><tr><td>Total do ano</td><td>${count}</td>${cells(totals)}</tr></tfoot>`;
+        }
+
+        function applyViewLayout() {
+            const annual = appState.view === 'annual';
+            $('monthlyArea').style.display = annual ? 'none' : 'contents';
+            $('annualContainer').style.display = annual ? 'block' : 'none';
+            $('btnAnnual').innerText = annual ? '📅 Voltar ao Mensal' : '📊 Resumo Anual';
+            $('btnNewProp').style.display = (annual || appState.showingTrash) ? 'none' : 'inline-flex';
+        }
+        async function setView(v) {
+            if (v === 'annual' && appState.showingTrash) await toggleTrash();
+            appState.view = v; applyViewLayout(); await renderCurrentView();
+        }
+        function toggleAnnual() { return setView(appState.view === 'annual' ? 'monthly' : 'annual'); }
+        async function renderCurrentView() { if (appState.view === 'annual') renderAnnual(); else await renderContent(false); }
+
+        /* ================= BACKUP / RESTAURAÇÃO ================= */
+        function downloadFile(name, content, mime) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+            a.download = name; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+        async function downloadBackup() {
+            await flushSaves(); await refreshLocalState(); // garante que o arquivo reflete o que está no banco do navegador
+            const d = new Date(), pad = n => String(n).padStart(2, '0');
+            const data = { app: 'app2', version: 1, exportedAt: d.toISOString(), companies: appState.companies, properties: appState.properties };
+            downloadFile(`backup_app2_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`, JSON.stringify(data, null, 2), 'application/json');
+            localStorage.setItem('app2_last_backup', new Date().toISOString()); updateBackupInfo();
+            showToast('✓ Backup baixado');
+        }
+        async function restoreBackup(input) {
+            const file = input.files[0]; input.value = '';
+            if (!file) return;
+            let data;
+            try { data = JSON.parse(await file.text()); } catch (e) { return alert('Arquivo inválido: não é um backup em JSON.'); }
+            if (data.app && data.app !== 'app2') return alert(`Este backup pertence a outro sistema (${data.app}) e não pode ser restaurado aqui.`);
+            const comps = Array.isArray(data.companies) ? data.companies.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string') : [];
+            const props = Array.isArray(data.properties) ? data.properties.filter(p => p && typeof p.id === 'string' && typeof p.companyId === 'string') : [];
+            if (!comps.length && !props.length) return alert('O arquivo não contém empresas nem imóveis de um backup válido.');
+            if (!confirm(`Restaurar ${comps.length} empresa(s) e ${props.length} imóvel(is)?\n\nRegistros com o mesmo ID serão sobrescritos pelos do backup. Nada que já existe será apagado.`)) return;
+            await flushSaves();
+            let falhas = 0;
+            for (const c of comps) { try { await apiPost('/companies', c); } catch (e) { falhas++; } }   // sequencial, de propósito
+            for (const p of props) { try { await apiPost('/properties', p); } catch (e) { falhas++; } }
+            await refreshLocalState(); renderAppView();
+            if (falhas) alert(`Restauração concluída com ${falhas} falha(s). Tente novamente.`);
+            else showToast('✓ Backup restaurado');
+        }
+
+        /* ================= EXPORTAÇÕES (CSV e PDF) ================= */
+        const normalizeText = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        const slug = s => normalizeText(s).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'empresa';
+        function csvText(v) {
+            let s = String(v == null ? '' : v);
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;       // evita execução de fórmulas ao abrir no Excel
+            return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }
+        const csvNum = c => (c / 100).toFixed(2).replace('.', ',');
+
+        function exportCSV() {
+            const company = currentCompanyName(), y = appState.currentYear, N = NP(), multi = N > 1;
+            let header, rows, filename;
+            if (appState.view === 'annual') {
+                const { rows: ar, totals, count } = computeAnnual(), cols = annualCols();
+                header = ['Mês', 'Imóveis', ...cols.map(c => csvText(c[2]))];
+                rows = ar.map(r => [csvText(r.name), r.count, ...cols.map(([k, i]) => csvNum(r.S[k][i]))]);
+                rows.push(['Total do ano', count, ...cols.map(([k, i]) => csvNum(totals[k][i]))]);
+                if (!count) rows = [];
+                filename = `resumo_anual_${slug(company)}_${y}.csv`;
+            } else {
+                header = ['Empresa', 'Mês', 'Ano', 'Inquilino', 'CPF', 'Data de Recebimento', 'Aluguel', 'Energia', 'Água', 'Outras Receitas', 'Outras Despesas', 'Base Tributável', 'Taxa Adm.', 'Total Recebido',
+                    ...(multi ? [...PEOPLE.map(n => csvText(`Base · ${n}`)), ...PEOPLE.map(n => csvText(`Total · ${n}`))] : []), 'Observações'];
+                rows = getMonthProperties().map(p => {
+                    const o = calc(p), per = k => PEOPLE.map((_, i) => csvNum(o[k][i + 1]));
+                    return [csvText(company), MONTHS[appState.currentMonthIndex], y, csvText(p.name), csvText(p.cpf), p.date ? p.date.split('-').reverse().join('/') : '',
+                        csvNum(o.rent[0]), csvNum(o.electricity[0]), csvNum(o.water[0]), csvNum(o.otherRevenue[0]), csvNum(o.otherExpenses[0]), csvNum(o.base[0]), csvNum(o.adminTax[0]), csvNum(o.total[0]),
+                        ...(multi ? [...per('base'), ...per('total')] : []), csvText(p.observacoes)];
+                });
+                filename = `recebimentos_${slug(company)}_${y}-${String(appState.currentMonthIndex + 1).padStart(2, '0')}.csv`;
+            }
+            if (!rows.length) return showToast('Nada para exportar neste período', true);
+            downloadFile(filename, '\uFEFF' + [header, ...rows].map(r => r.join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+            showToast('✓ CSV exportado');
+        }
+
+        // O leiaute do PDF acompanha o número de pessoas: até 2 → retrato; 3 ou 4 → paisagem (mais colunas de valores)
+        async function exportPDF() {
+            await flushSaves();
+            const annual = appState.view === 'annual', y = appState.currentYear, nome = currentCompanyName();
+            const landscape = annual || NP() >= 3;
+            $('print-company-title').innerText = nome;
+            $('print-month-title').innerText = annual ? `Resumo Anual - ${y}` : `Relatório de Recebimentos - ${MONTHS[appState.currentMonthIndex]}/${y}`;
+            $('print-datetime').innerText = `Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} · ${splitDesc()}`;
+            const titulo = document.title;
+            document.title = `Aluguel - ${nome.replace(/[\\/:*?"<>|]/g, '')} - ${annual ? y + '-resumo-anual' : y + '-' + String(appState.currentMonthIndex + 1).padStart(2, '0')}`;
+            let pageStyle = null;
+            if (landscape) { pageStyle = document.createElement('style'); pageStyle.textContent = '@page { size: A4 landscape; margin: 8mm; }'; document.head.appendChild(pageStyle); }
+            window.addEventListener('afterprint', () => { document.title = titulo; pageStyle?.remove(); }, { once: true });
+            window.print();
+        }
+
+        /* ================= PESSOAS (1 a 4) ================= */
+        function openPeopleDialog() {
+            $('peopleCount').value = NP();
+            buildPeopleInputs(PEOPLE.slice());
+            $('peopleDialog').showModal();
+        }
+        function buildPeopleInputs(names) {
+            const n = parseInt($('peopleCount').value, 10);
+            $('peopleNames').innerHTML = Array.from({ length: n }, (_, i) =>
+                `<label>Nome da pessoa ${i + 1}<input type="text" maxlength="14" id="personName${i + 1}" value="${escapeHtml(names[i] || `Pessoa ${i + 1}`)}"></label>`).join('');
+        }
+        function onPeopleCountChange() { buildPeopleInputs([...document.querySelectorAll('#peopleNames input')].map(i => i.value)); }
+        async function savePeople() {
+            const n = parseInt($('peopleCount').value, 10);
+            const names = Array.from({ length: n }, (_, i) => $(`personName${i + 1}`).value.trim().slice(0, 14) || `Pessoa ${i + 1}`);
+            const c = appState.companies.find(x => x.id === appState.currentCompanyId); if (!c) return;
+            c.people = names;
+            try { localStorage.setItem('app2_people_' + c.id, JSON.stringify(names)); } catch (e) {}
+            try { await apiPost('/companies', c); } catch (e) {}
+            $('peopleDialog').close();
+            loadPeople(); await renderCurrentView(); showToast('✓ Pessoas atualizadas');
+        }
+
         window.onload = initApp;
+        // Grava o que estiver pendente ao esconder/fechar a página (importante no celular)
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSaves(true); });
+        window.addEventListener('pagehide', () => flushSaves(true));
     </script>
 </body>
 </html>
