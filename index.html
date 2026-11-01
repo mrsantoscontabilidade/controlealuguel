@@ -112,6 +112,16 @@
             .year-selector { border-right: none; border-bottom: 2px solid #1a252f; width: 100%; justify-content: center; }
         }
 
+        /* ========== Aviso de outra aba / cópias automáticas ========== */
+        #syncBanner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 3000; background: #f39c12; color: #fff; padding: 10px 14px; justify-content: center; align-items: center; gap: 12px; font-weight: 600; font-size: .9rem; flex-wrap: wrap; text-align: center; }
+        #snapDialog { border: none; border-radius: 10px; padding: 22px; width: min(520px, 94vw); box-shadow: 0 10px 30px rgba(0,0,0,.25); margin: auto; }
+        #snapDialog::backdrop { background: rgba(0,0,0,.4); }
+        #snapDialog h3 { margin-bottom: 6px; color: var(--primary); }
+        #snapDialog .dialog-hint { font-size: .8rem; color: #7f8c8d; margin-bottom: 12px; }
+        #snapList { max-height: 50vh; overflow-y: auto; }
+        .snap-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+        @media print { #syncBanner { display: none !important; } }
+
         /* ========== Diálogo de pessoas ========== */
         #peopleDialog { border: none; border-radius: 10px; padding: 22px; width: min(420px, 92vw); box-shadow: 0 10px 30px rgba(0,0,0,.25); margin: auto; }
         #peopleDialog::backdrop { background: rgba(0,0,0,.4); }
@@ -248,7 +258,10 @@
                     <button class="btn btn-outline" onclick="document.getElementById('restoreFile').click()" title="Restaura empresas e imóveis a partir de um backup .json">⬆️ Restaurar Backup</button>
                     <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(this)">
                     <button class="btn btn-outline" onclick="importFromOldServer()" title="Copia os dados do server.js antigo para este navegador">🔄 Importar do servidor antigo</button>
+                    <button class="btn btn-outline" onclick="chooseBackupFolder()" title="Grava um backup por dia numa pasta do computador (Chrome/Edge)">📁 Pasta de backup</button>
+                    <button class="btn btn-outline" onclick="openSnapshots()" title="Cópias internas automáticas">🕘 Cópias automáticas</button>
                     <div id="backupInfo" style="font-size: 0.8rem; margin-top: 6px; text-align: right;"></div>
+                    <div id="autoBackupInfo" style="font-size: 0.78rem; margin-top: 3px; text-align: right; color: #7f8c8d; max-width: 520px; margin-left: auto;"></div>
                 </div>
             </div>
             <div class="company-grid" id="companiesGrid"></div>
@@ -320,6 +333,18 @@
             </div>
         </div>
     </div>
+
+    <div id="syncBanner">⚠️ Os dados foram alterados em outra aba. Atualize para não sobrescrever as mudanças. <button class="btn btn-sm btn-dark" onclick="syncFromDb()">Atualizar agora</button></div>
+
+    <dialog id="snapDialog">
+        <h3>🕘 Cópias automáticas</h3>
+        <p class="dialog-hint">O app guarda uma cópia por dia (na abertura) e outra antes de ações destrutivas, em rodízio das últimas 20. Ficam neste navegador, então não substituem o backup em arquivo ou em pasta.</p>
+        <div id="snapList"></div>
+        <div class="dialog-actions">
+            <button class="btn btn-outline" onclick="snapNowManual()">➕ Criar cópia agora</button>
+            <button class="btn btn-primary" onclick="document.getElementById('snapDialog').close()">Fechar</button>
+        </div>
+    </dialog>
 
     <dialog id="peopleDialog">
         <h3>👥 Pessoas que dividem o valor</h3>
@@ -393,8 +418,14 @@
         function openDB() {
             if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
                 if (!window.indexedDB) return reject(new Error('IndexedDB indisponível neste navegador'));
-                const req = indexedDB.open(DB_NAME, 1);
-                req.onupgradeneeded = () => { const db = req.result; db.createObjectStore('companies', { keyPath: 'id' }); db.createObjectStore('properties', { keyPath: 'id' }); };
+                const req = indexedDB.open(DB_NAME, 2);
+                req.onupgradeneeded = () => {
+                    const db = req.result, has = n => db.objectStoreNames.contains(n);
+                    if (!has('companies')) db.createObjectStore('companies', { keyPath: 'id' });
+                    if (!has('properties')) db.createObjectStore('properties', { keyPath: 'id' });
+                    if (!has('backups')) db.createObjectStore('backups', { keyPath: 'id' });
+                    if (!has('meta')) db.createObjectStore('meta', { keyPath: 'k' });
+                };
                 req.onsuccess = () => { req.result.onversionchange = () => req.result.close(); resolve(req.result); };
                 req.onerror = () => reject(req.error);
             });
@@ -441,6 +472,7 @@
                     const cur = ps.openCursor(); cur.onsuccess = () => { const c = cur.result; if (!c) return; if (c.value.companyId === id) { const v = c.value; v.deleted = true; c.update(v); } c.continue(); };
                 });
                 else throw new Error('Operação desconhecida: ' + method + ' ' + endpoint);
+                scheduleFolderBackup(); notifyOtherTabs();
             } catch (e) { showToast('✗ Falha ao salvar no navegador', true); throw e; }
         }
         const apiPost = (ep, data) => apiSend('POST', ep, data);
@@ -464,6 +496,122 @@
             for (const id of ids) await saveNow(id);
         }
         async function bulkSave(list) { await flushSaves(); await apiPost('/properties/bulk', { properties: list }); }
+
+        /* ================= BACKUP AUTOMÁTICO + SINCRONIA ENTRE ABAS ================= */
+        const MAX_SNAPSHOTS = 20, MAX_FOLDER_FILES = 30;
+
+        async function buildBackupData() {
+            const [companies, properties] = await Promise.all([apiGet('/companies'), apiGet('/properties')]);
+            return { app: 'app2', version: 1, exportedAt: new Date().toISOString(), companies: companies || [], properties: properties || [] };
+        }
+
+        /* --- Cópias internas (guardadas no próprio IndexedDB, em rodízio) --- */
+        async function snapshotNow(reason = 'automática') {
+            try {
+                const data = await buildBackupData();
+                if (!data.companies.length && !data.properties.length) return;
+                await dbRun('backups', 'readwrite', t => { t.objectStore('backups').put({ id: new Date().toISOString(), reason, nCompanies: data.companies.length, nProps: data.properties.length, data }); });
+                const keys = (await dbRun('backups', 'readonly', t => t.objectStore('backups').getAllKeys())).sort();
+                const excess = keys.slice(0, Math.max(0, keys.length - MAX_SNAPSHOTS));
+                if (excess.length) await dbRun('backups', 'readwrite', t => { excess.forEach(k => t.objectStore('backups').delete(k)); });
+            } catch (e) { console.warn('Falha ao criar cópia interna', e); }
+        }
+        async function snapshotIfStale() { // 1 cópia por dia, na primeira abertura
+            try {
+                const keys = (await dbRun('backups', 'readonly', t => t.objectStore('backups').getAllKeys())).sort();
+                if (!keys.length || Date.now() - new Date(keys[keys.length - 1]) > 864e5) await snapshotNow('automática (diária)');
+            } catch (e) {}
+        }
+        async function openSnapshots() {
+            const list = (await dbRun('backups', 'readonly', t => t.objectStore('backups').getAll())).sort((a, b) => b.id.localeCompare(a.id));
+            $('snapList').innerHTML = list.length ? list.map(s => `<div class="snap-row"><div><strong>${new Date(s.id).toLocaleString('pt-BR')}</strong><br><small>${escapeHtml(s.reason)} · ${s.nCompanies} empresa(s), ${s.nProps} imóvel(is)</small></div>
+                <div><button class="btn btn-sm btn-outline" data-snap="${s.id}" data-act="dl" title="Baixar como arquivo">⬇️</button> <button class="btn btn-sm btn-primary" data-snap="${s.id}" data-act="restore">Restaurar</button></div></div>`).join('') : '<p>Nenhuma cópia ainda.</p>';
+            if (!$('snapDialog').open) $('snapDialog').showModal();
+        }
+        async function onSnapClick(e) {
+            const b = e.target.closest('[data-snap]'); if (!b) return;
+            const s = await dbRun('backups', 'readonly', t => t.objectStore('backups').get(b.dataset.snap)); if (!s) return;
+            if (b.dataset.act === 'dl') downloadFile(`backup_app2_${s.id.replace(/[:.]/g, '-')}.json`, JSON.stringify(s.data, null, 2), 'application/json');
+            else { $('snapDialog').close(); await applyBackupData(s.data); }
+        }
+        async function snapNowManual() { await snapshotNow('manual'); await openSnapshots(); showToast('✓ Cópia criada'); }
+
+        /* --- Pasta de backup (Chrome/Edge no computador): 1 arquivo por dia, últimos 30 --- */
+        const FS_OK = 'showDirectoryPicker' in window;
+        let folderHandle = null, folderTimer = null, folderStatus = '';
+        const metaGet = k => dbRun('meta', 'readonly', t => t.objectStore('meta').get(k));
+        const metaSet = (k, v) => dbRun('meta', 'readwrite', t => { t.objectStore('meta').put({ k, v }); });
+
+        async function initFolderBackup() {
+            if (FS_OK) { try { folderHandle = (await metaGet('folderHandle'))?.v || null; } catch (e) {} }
+            updateAutoBackupInfo();
+        }
+        async function chooseBackupFolder() {
+            if (!FS_OK) return alert('Este navegador não permite escolher uma pasta (use Chrome ou Edge no computador). As cópias internas continuam funcionando.');
+            try {
+                folderHandle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'app2backup' });
+                await metaSet('folderHandle', folderHandle);
+                await writeFolderBackup(true);
+            } catch (e) { if (e.name !== 'AbortError') alert('Não foi possível usar essa pasta: ' + e.message); }
+            updateAutoBackupInfo();
+        }
+        async function ensureFolderPermission(interactive) {
+            if (!folderHandle) return false;
+            let p = await folderHandle.queryPermission({ mode: 'readwrite' });
+            if (p !== 'granted' && interactive) p = await folderHandle.requestPermission({ mode: 'readwrite' });
+            return p === 'granted';
+        }
+        function armPermissionRetry() { // depois de reabrir o navegador, o Chrome exige um clique para liberar a pasta
+            if (armPermissionRetry.on) return; armPermissionRetry.on = true;
+            document.addEventListener('click', () => { armPermissionRetry.on = false; writeFolderBackup(true); }, { once: true });
+        }
+        async function writeFolderBackup(interactive = false) {
+            if (!folderHandle) return false;
+            try {
+                if (!(await ensureFolderPermission(interactive))) { folderStatus = 'waiting'; armPermissionRetry(); updateAutoBackupInfo(); return false; }
+                const data = await buildBackupData();
+                if (!data.companies.length && !data.properties.length) return false;
+                const d = new Date(), pad = n => String(n).padStart(2, '0');
+                const fh = await folderHandle.getFileHandle(`backup_app2_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`, { create: true });
+                const w = await fh.createWritable(); await w.write(JSON.stringify(data, null, 2)); await w.close();
+                const names = []; for await (const [n, h] of folderHandle.entries()) if (h.kind === 'file' && /^backup_app2_\d{4}-\d{2}-\d{2}\.json$/.test(n)) names.push(n);
+                names.sort(); for (const n of names.slice(0, Math.max(0, names.length - MAX_FOLDER_FILES))) await folderHandle.removeEntry(n);
+                localStorage.setItem('app2_last_folder_backup', new Date().toISOString()); folderStatus = 'ok'; updateAutoBackupInfo(); return true;
+            } catch (e) { folderStatus = 'error'; updateAutoBackupInfo(); return false; }
+        }
+        function scheduleFolderBackup() { if (!folderHandle) return; clearTimeout(folderTimer); folderTimer = setTimeout(() => writeFolderBackup(false), 15000); }
+        function updateAutoBackupInfo() {
+            const el = $('autoBackupInfo'); if (!el) return;
+            let t = '🕘 Cópias internas automáticas ativas (diária e antes de ações destrutivas).';
+            if (!FS_OK) t += ' Pasta de backup: indisponível neste navegador.';
+            else if (!folderHandle) t += ' 📁 Nenhuma pasta de backup escolhida.';
+            else {
+                const last = localStorage.getItem('app2_last_folder_backup');
+                t += ` 📁 Pasta "${folderHandle.name}": ` + (folderStatus === 'waiting' ? 'aguardando permissão (clique em qualquer lugar da página).' : folderStatus === 'error' ? 'falha ao gravar.' : last ? `último backup ${new Date(last).toLocaleString('pt-BR')}.` : 'pronta.');
+            }
+            el.innerText = t;
+        }
+
+        /* --- Aviso/atualização quando outra aba altera os dados --- */
+        const TAB_ID = Math.random().toString(36).slice(2);
+        const syncChannel = 'BroadcastChannel' in window ? new BroadcastChannel('app2_sync') : null;
+        let syncTimer = null;
+        const notifyOtherTabs = () => { try { syncChannel?.postMessage({ tab: TAB_ID }); } catch (e) {} };
+        if (syncChannel) syncChannel.onmessage = e => { if (e.data?.tab === TAB_ID) return; clearTimeout(syncTimer); syncTimer = setTimeout(handleExternalChange, 400); };
+        async function handleExternalChange() {
+            const a = document.activeElement;
+            const editing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !a.readOnly;
+            if (editing || pendingSaves.size) { $('syncBanner').style.display = 'flex'; return; } // não apaga o que você está digitando
+            await syncFromDb(true);
+        }
+        async function syncFromDb(silent) {
+            $('syncBanner').style.display = 'none';
+            await flushSaves(); await refreshLocalState();
+            if (appState.currentCompanyId && !appState.companies.some(c => c.id === appState.currentCompanyId)) appState.currentCompanyId = null;
+            if (appState.currentCompanyId) { loadPeople(); if (appState.view === 'annual') renderAnnual(); else await renderContent(false); }
+            else renderAppView();
+            showToast('↻ Dados atualizados (alterados em outra aba)');
+        }
 
         /* ---------- Migração do servidor antigo (uma vez) ---------- */
         async function importFromOldServer() {
@@ -544,6 +692,8 @@
 
         async function initApp() {
             try { navigator.storage?.persist?.(); await seedIfEmpty(); } catch (e) { alert('Não foi possível abrir o banco de dados do navegador: ' + e.message); }
+            $('snapList').addEventListener('click', onSnapClick);
+            snapshotIfStale(); initFolderBackup().then(() => writeFolderBackup(false));
             $('companiesGrid').addEventListener('click', onCompanyClick);
             setupPropertyEvents();
             await refreshLocalState();
@@ -570,7 +720,7 @@
                     </div>`;
                 grid.appendChild(card);
             });
-            updateBackupInfo();
+            updateBackupInfo(); updateAutoBackupInfo();
         }
         function onCompanyClick(e) {
             const b = e.target.closest('[data-action]'), card = e.target.closest('.company-card');
@@ -589,7 +739,7 @@
         async function deleteCompany(id) {
             if (appState.companies.length <= 1) return alert("É necessário ter pelo menos uma empresa.");
             if (confirm("Tem certeza que deseja excluir esta empresa e mover tudo para a Lixeira?")) {
-                await apiDelete('/companies/' + id);
+                await snapshotNow('antes de excluir empresa'); await apiDelete('/companies/' + id);
                 if (appState.currentCompanyId === id) appState.currentCompanyId = null;
                 showToast("✓ Movido para Lixeira"); renderAppView();
             }
@@ -723,7 +873,7 @@
         async function clearCurrentMonth() {
             if (confirm(`Remover todos os imóveis de ${MONTHS[appState.currentMonthIndex]} de ${appState.currentYear}?`)) {
                 const ids = getVisibleProperties().map(p => p.id);
-                await flushSaves(); await apiPost('/properties/bulk-delete', { ids }); showToast(); await renderContent();
+                await flushSaves(); await snapshotNow('antes de limpar o mês'); await apiPost('/properties/bulk-delete', { ids }); showToast(); await renderContent();
             }
         }
 
@@ -920,7 +1070,7 @@
         async function downloadBackup() {
             await flushSaves(); await refreshLocalState(); // garante que o arquivo reflete o que está no banco do navegador
             const d = new Date(), pad = n => String(n).padStart(2, '0');
-            const data = { app: 'app2', version: 1, exportedAt: d.toISOString(), companies: appState.companies, properties: appState.properties };
+            const data = await buildBackupData();
             downloadFile(`backup_app2_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`, JSON.stringify(data, null, 2), 'application/json');
             localStorage.setItem('app2_last_backup', new Date().toISOString()); updateBackupInfo();
             showToast('✓ Backup baixado');
@@ -930,18 +1080,19 @@
             if (!file) return;
             let data;
             try { data = JSON.parse(await file.text()); } catch (e) { return alert('Arquivo inválido: não é um backup em JSON.'); }
+            await applyBackupData(data);
+        }
+        // Usada pelo arquivo .json e pelas cópias automáticas. Grava tudo numa única transação (ou tudo, ou nada).
+        async function applyBackupData(data) {
             if (data.app && data.app !== 'app2') return alert(`Este backup pertence a outro sistema (${data.app}) e não pode ser restaurado aqui.`);
             const comps = Array.isArray(data.companies) ? data.companies.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string') : [];
             const props = Array.isArray(data.properties) ? data.properties.filter(p => p && typeof p.id === 'string' && typeof p.companyId === 'string') : [];
             if (!comps.length && !props.length) return alert('O arquivo não contém empresas nem imóveis de um backup válido.');
-            if (!confirm(`Restaurar ${comps.length} empresa(s) e ${props.length} imóvel(is)?\n\nRegistros com o mesmo ID serão sobrescritos pelos do backup. Nada que já existe será apagado.`)) return;
-            await flushSaves();
-            let falhas = 0;
-            for (const c of comps) { try { await apiPost('/companies', c); } catch (e) { falhas++; } }   // sequencial, de propósito
-            for (const p of props) { try { await apiPost('/properties', p); } catch (e) { falhas++; } }
-            await refreshLocalState(); renderAppView();
-            if (falhas) alert(`Restauração concluída com ${falhas} falha(s). Tente novamente.`);
-            else showToast('✓ Backup restaurado');
+            if (!confirm(`Restaurar ${comps.length} empresa(s) e ${props.length} imóvel(is)?\n\nRegistros com o mesmo ID serão sobrescritos pelos do backup. Nada que já existe será apagado.\nUma cópia do estado atual será guardada antes.`)) return;
+            await flushSaves(); await snapshotNow('antes de restaurar');
+            try { await dbRun(['companies', 'properties'], 'readwrite', t => { comps.forEach(c => t.objectStore('companies').put(c)); props.forEach(p => t.objectStore('properties').put(p)); }); notifyOtherTabs(); }
+            catch (e) { return alert('Falha ao restaurar; nada foi alterado. ' + e.message); }
+            await refreshLocalState(); renderAppView(); showToast('✓ Backup restaurado');
         }
 
         /* ================= EXPORTAÇÕES (CSV e PDF) ================= */
@@ -1021,7 +1172,7 @@
 
         window.onload = initApp;
         // Grava o que estiver pendente ao esconder/fechar a página (importante no celular)
-        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSaves(true); });
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { flushSaves(true); if (folderHandle) writeFolderBackup(false); } });
         window.addEventListener('pagehide', () => flushSaves(true));
     </script>
 </body>
