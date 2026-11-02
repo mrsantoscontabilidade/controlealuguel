@@ -43,6 +43,7 @@
         .month-tab { flex: 1; text-align: center; padding: 12px 20px; color: #bdc3c7; cursor: pointer; font-weight: bold; transition: all 0.3s; border-bottom: 3px solid transparent; min-width: 90px; }
         .month-tab:hover { background: #2c3e50; color: white; }
         .month-tab.active { background: var(--secondary); color: white; border-bottom: 3px solid #fff; }
+        .month-tab:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
         .view-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; }
@@ -296,7 +297,7 @@
                     <span>Ano:</span>
                     <select id="yearFilter" onchange="switchYear(this.value)"></select>
                 </div>
-                <div class="months-nav" id="monthsNav"></div>
+                <div class="months-nav" id="monthsNav" role="tablist" aria-label="Meses"></div>
             </div>
         </div>
 
@@ -359,7 +360,7 @@
         </div>
     </dialog>
 
-    <div id="toast"><span id="toast-text">✓ Salvo no navegador</span></div>
+    <div id="toast" role="status" aria-live="polite"><span id="toast-text">✓ Salvo neste navegador</span></div>
 
     <script>
         const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -638,7 +639,7 @@
 
         /* ---------- Máscaras ---------- */
         function mascaraMoeda(input) {
-            const d = input.value.replace(/\D/g, '');
+            const d = input.value.replace(/\D/g, '').slice(0, 12); // limite: 9.999.999.999,99
             input.value = d === '' ? '' : fmtCents(parseInt(d, 10));
         }
         function mascaraCPF(input) {
@@ -650,7 +651,7 @@
         }
         function escapeHtml(str) { return !str ? '' : String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
 
-        function showToast(msg = "✓ Salvo no Banco Local", isError = false) {
+        function showToast(msg = "✓ Salvo neste navegador", isError = false) {
             const t = $('toast');
             $('toast-text').innerText = `${msg} às ${new Date().toTimeString().split(' ')[0]}`;
             t.classList.toggle('error', isError); t.classList.add('show');
@@ -676,8 +677,11 @@
         const byNewest = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
         function propPeriod(p) {
             let m = p.createdInMonth, y = p.createdInYear || new Date().getFullYear();
-            const parts = (p.date || '').split('-');
-            if (parts.length === 3) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1; }
+            const parts = String(p.date || '').split('-');
+            if (parts.length === 3) {
+                const py = parseInt(parts[0], 10), pm = parseInt(parts[1], 10) - 1;
+                if (Number.isFinite(py) && Number.isFinite(pm)) { y = py; m = pm; }
+            }
             return { m, y };
         }
         function getVisibleProperties() {
@@ -738,10 +742,10 @@
         }
         async function deleteCompany(id) {
             if (appState.companies.length <= 1) return alert("É necessário ter pelo menos uma empresa.");
-            if (confirm("Tem certeza que deseja excluir esta empresa e mover tudo para a Lixeira?")) {
+            if (confirm("Excluir esta empresa e todos os seus imóveis?\n\nEla deixa de aparecer na lista, mas uma cópia é guardada antes em 🕘 Cópias automáticas, de onde pode ser restaurada.")) {
                 await snapshotNow('antes de excluir empresa'); await apiDelete('/companies/' + id);
                 if (appState.currentCompanyId === id) appState.currentCompanyId = null;
-                showToast("✓ Movido para Lixeira"); renderAppView();
+                showToast("✓ Empresa excluída (cópia guardada)"); renderAppView();
             }
         }
         function selectCompany(id) { appState.currentCompanyId = id; appState.view = 'monthly'; renderAppView(); }
@@ -770,7 +774,10 @@
             MONTHS.forEach((m, i) => {
                 const t = document.createElement('div');
                 t.className = `month-tab ${i === appState.currentMonthIndex ? 'active' : ''}`;
-                t.innerText = m; t.onclick = () => switchMonth(i); nav.appendChild(t);
+                t.setAttribute('role', 'tab'); t.tabIndex = 0; t.setAttribute('aria-selected', String(i === appState.currentMonthIndex));
+                t.innerText = m; t.onclick = () => switchMonth(i);
+                t.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); switchMonth(i); nav.children[i]?.focus(); } };
+                nav.appendChild(t);
             });
         }
         async function switchMonth(i) { appState.currentMonthIndex = i; renderMonthsMenu(); if (appState.view === 'annual') await setView('monthly'); else await renderContent(false); }
@@ -819,18 +826,18 @@
             const anteriores = appState.properties.filter(p => {
                 if (p.companyId !== appState.currentCompanyId || p.deleted) return false;
                 const { m, y } = propPeriod(p); return m === mes && y === ano;
-            });
+            }).sort(byNewest); // mesma ordem em que aparecem no mês anterior
             if (!anteriores.length) return alert(`Não há registros cadastrados no mês anterior (${MONTHS[mes]}/${ano}) para importar.`);
 
             // Evita duplicados: compara CPF (ou nome, se não houver CPF) com o que já existe no mês e entre os próprios importados
             const existentes = new Set(getVisibleProperties().map(tenantKey).filter(Boolean));
-            const novos = [];
+            const novos = [], stamp = Date.now();
             for (const a of anteriores) {
                 const k = tenantKey(a);
                 if (!k || existentes.has(k)) continue;
                 existentes.add(k);
-                novos.push({
-                    id: 'prop_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), companyId: appState.currentCompanyId,
+                novos.push({ // o contador no id mantém a ordem do mês anterior (o banco ordena pelo id)
+                    id: 'prop_' + stamp + '_' + String(novos.length).padStart(4, '0') + '_' + Math.random().toString(36).slice(2, 7), companyId: appState.currentCompanyId,
                     name: a.name || '', cpf: a.cpf || '', date: '', rent: '', adminTax: '', electricity: '', water: '', otherRevenue: '', otherExpenses: '', observacoes: '',
                     minimized: false, createdInMonth: appState.currentMonthIndex, createdInYear: appState.currentYear, deleted: false
                 });
@@ -847,7 +854,7 @@
             p[key] = val; scheduleSave(p);
             if (key === 'date' && val) {
                 const [y, m] = val.split('-').map(Number);
-                if (m - 1 !== appState.currentMonthIndex || y !== appState.currentYear) { await flushSaves(); alert('Imóvel realocado.'); await renderContent(); return; }
+                if (m - 1 !== appState.currentMonthIndex || y !== appState.currentYear) { await flushSaves(); alert(`Imóvel movido para ${MONTHS[m - 1]}/${y}, de acordo com a data de recebimento.`); await renderContent(); return; }
             }
             updateDashboardAndTotals();
         }
@@ -925,7 +932,7 @@
 
         /* ---------- Renderização dos cartões ---------- */
         function personInputs(idp, pid, initial) {
-            return NP() > 1 ? PEOPLE.map((_, i) => `<input type="text" id="${idp}P${i + 1}_${pid}" ${initial ? `value="${initial}"` : ''} readonly class="print-only-val">`).join('') : '';
+            return NP() > 1 ? PEOPLE.map((_, i) => `<input type="text" id="${idp}P${i + 1}_${escapeHtml(pid)}"${initial ? `value="${initial}"` : ''} readonly class="print-only-val">`).join('') : '';
         }
         function columnsHeader() {
             const multi = NP() > 1;
@@ -934,11 +941,11 @@
         function moneyRow(p, f) {
             const v = p[f.key] ? fmtCents(toCents(p[f.key])) : '';
             return `<div class="form-row ${f.ded ? 'deduction' : ''}"><label>${f.label}</label>
-                <input type="text" value="${v}" data-mask="money" data-money="${f.key}">${personInputs(f.id, p.id)}</div>`;
+                <input type="text" inputmode="numeric" value="${v}" data-mask="money" data-money="${f.key}" aria-label="${escapeHtml(f.label)}">${personInputs(f.id, p.id)}</div>`;
         }
         function totalRow(p, key, label, style) {
             return `<div class="form-row total-row" ${style ? `style="${style}"` : ''}><label>${label}</label>
-                <input type="text" id="${key}_${p.id}" value="0,00" readonly>${personInputs(key, p.id, '0,00')}</div>`;
+                <input type="text" id="${key}_${escapeHtml(p.id)}" value="0,00" readonly>${personInputs(key, p.id, '0,00')}</div>`;
         }
 
         async function renderContent(refetch = true) {
@@ -957,32 +964,48 @@
                 card.className = `property-card ${p.minimized ? 'minimized' : ''} ${appState.showingTrash ? 'in-trash' : ''}`;
                 const controls = appState.showingTrash
                     ? `<button class="btn btn-sm btn-success" data-action="restore">♻️ Restaurar</button><button class="btn btn-sm btn-danger" data-action="hardDelete">❌ Excluir Permanentemente</button>`
-                    : `<span class="minimized-summary" id="summary_${p.id}">Total: 0,00</span><button class="btn btn-sm btn-dark" id="btnMin_${p.id}" data-action="minimize">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button><button class="btn btn-sm btn-danger" data-action="remove">🗑️ Excluir</button>`;
+                    : `<span class="minimized-summary" id="summary_${escapeHtml(p.id)}">Total: 0,00</span><button class="btn btn-sm btn-dark" id="btnMin_${escapeHtml(p.id)}" data-action="minimize">${p.minimized ? '▼ Expandir' : '▲ Minimizar'}</button><button class="btn btn-sm btn-danger" data-action="remove">🗑️ Excluir</button>`;
                 card.innerHTML = `
                     <div class="card-header" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <span class="print-only-label">INQUILINO:</span>
-                        <input type="text" class="prop-title-input" style="flex: 2; min-width: 140px;" value="${escapeHtml(p.name)}" placeholder="Nome do Inquilino / Imóvel" data-field="name" ${ro}>
+                        <input type="text" class="prop-title-input" style="flex: 2; min-width: 140px;" value="${escapeHtml(p.name)}" placeholder="Nome do Inquilino / Imóvel" aria-label="Nome do inquilino ou imóvel" data-field="name" ${ro}>
                         <span class="print-only-label">CPF:</span>
-                        <input type="text" class="prop-title-input" style="flex: 1; min-width: 110px;" value="${escapeHtml(p.cpf)}" placeholder="000.000.00-00" maxlength="14" data-mask="cpf" data-field="cpf" ${ro}>
+                        <input type="text" class="prop-title-input" style="flex: 1; min-width: 110px;" value="${escapeHtml(p.cpf)}" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" aria-label="CPF" data-mask="cpf" data-field="cpf" ${ro}>
                         <div class="card-controls">${controls}</div>
                     </div>
                     <div class="card-body" ${appState.showingTrash ? 'style="opacity:0.6; pointer-events:none;"' : ''}>
                         <div class="form-grid">
                             ${columnsHeader()}
-                            <div class="form-row date-row"><label>Data de Recebimento</label><input type="date" value="${p.date || ''}" data-field="date"></div>
+                            <div class="form-row date-row"><label>Data de Recebimento</label><input type="date" value="${escapeHtml(p.date)}" aria-label="Data de Recebimento" data-field="date"></div>
                             ${FIELDS.slice(0, 5).map(f => moneyRow(p, f)).join('')}
                             ${totalRow(p, 'base', 'BASE TRIB. CARNÊ LEÃO (=)', 'background: #fcf3cf;')}
                             ${moneyRow(p, FIELDS[5])}
                             ${totalRow(p, 'total', 'TOTAL RECEBIDO (=)')}
                             <div class="form-row obs-row ${p.observacoes ? '' : 'obs-empty'}" style="grid-template-columns: 1fr; border:none; padding-top:2px;">
                                 <label style="margin-bottom:1px;">Observações Gerais / Histórico:</label>
-                                <textarea rows="2" placeholder="Digite observações..." data-field="observacoes">${escapeHtml(p.observacoes)}</textarea>
+                                <textarea rows="2" placeholder="Digite observações..." aria-label="Observações gerais e histórico" data-field="observacoes">${escapeHtml(p.observacoes)}</textarea>
                             </div>
                         </div>
                     </div>`;
                 container.appendChild(card);
             });
             updateDashboardAndTotals();
+        }
+
+        // Grava enquanto digita (com debounce), para não perder o que foi digitado se a aba fechar antes de sair do campo
+        function liveSave(id, el) {
+            const p = appState.properties.find(x => x.id === id);
+            if (!p || appState.showingTrash) return;
+            if (el.dataset.money) {
+                const d = el.value.replace(/\D/g, '');
+                p[el.dataset.money] = d === '' ? '' : (parseInt(d, 10) / 100).toFixed(2);
+                updateDashboardAndTotals();
+            } else if (el.dataset.field && el.type !== 'date') {
+                p[el.dataset.field] = el.value;
+                // a linha de observações só é impressa se tiver texto
+                if (el.dataset.field === 'observacoes') el.closest('.obs-row')?.classList.toggle('obs-empty', !el.value.trim());
+            } else return;
+            scheduleSave(p);
         }
 
         // Delegação de eventos (sem ids interpolados em onclick)
@@ -993,12 +1016,20 @@
                 const id = idOf(e); if (!id) return;
                 const b = e.target.closest('[data-action]');
                 if (b) { ({ restore: restoreProperty, hardDelete: hardDeleteProperty, minimize: toggleMinimize, remove: removeProperty })[b.dataset.action]?.(id); return; }
-                if (e.target.type === 'date' && e.target.showPicker) e.target.showPicker();
+                if (e.target.type === 'date') { try { e.target.showPicker?.(); } catch (_) {} }
             });
-            c.addEventListener('input', e => { const m = e.target.dataset.mask; if (m === 'money') mascaraMoeda(e.target); else if (m === 'cpf') mascaraCPF(e.target); });
+            c.addEventListener('input', e => {
+                const m = e.target.dataset.mask;
+                if (m === 'money') mascaraMoeda(e.target); else if (m === 'cpf') mascaraCPF(e.target);
+                const id = idOf(e); if (id) liveSave(id, e.target);
+            });
             c.addEventListener('change', e => { const id = idOf(e), f = e.target.dataset.field; if (id && f) handleFieldChange(id, f, e.target.value); });
             c.addEventListener('focusout', e => { const id = idOf(e), k = e.target.dataset.money; if (id && k) handleMoneyBlur(e.target, id, k); });
-            c.addEventListener('keydown', e => { if (e.target.type === 'date' && e.key !== 'Tab') e.preventDefault(); });
+            c.addEventListener('keydown', e => { // data só pelo seletor; Enter/Espaço abrem o seletor (acessível por teclado)
+                if (e.target.type !== 'date' || e.key === 'Tab') return;
+                e.preventDefault();
+                if (e.key === 'Enter' || e.key === ' ') { try { e.target.showPicker?.(); } catch (_) {} }
+            });
             $('annualTable').addEventListener('click', e => { const b = e.target.closest('[data-month]'); if (b) switchMonth(parseInt(b.dataset.month, 10)); });
         }
 
