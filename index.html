@@ -401,7 +401,7 @@
             { key: 'otherExpenses', id: 'othExp',  sum: 'OthExp', label: 'Outras Despesas (-)', ded: true },
             { key: 'adminTax',      id: 'admin',   sum: 'Admin',  label: 'Desconto Taxa Adm. (-)', ded: true }
         ];
-        const SUMS = [...FIELDS.map(f => [f.key, f.sum]), ['base', 'Base'], ['total', 'GrandTotal']];
+        const SUMS = [['rent', 'Rent'], ['electricity', 'Elec'], ['water', 'Water'], ['otherRevenue', 'OthRev'], ['base', 'Base'], ['otherExpenses', 'OthExp'], ['adminTax', 'Admin'], ['total', 'GrandTotal']];
 
         let appState = { currentCompanyId: null, currentMonthIndex: new Date().getMonth(), currentYear: new Date().getFullYear(), showingTrash: false, view: 'monthly', dirty: false, companies: [], properties: [] };
 
@@ -432,9 +432,9 @@
             const N = NP(), o = {};
             FIELDS.forEach(f => o[f.key] = splitCents(toCents(p[f.key]), N));
             const idx = Array.from({ length: N + 1 }, (_, i) => i);
-            const comb = i => o.rent[i] + o.electricity[i] + o.water[i] + o.otherRevenue[i] - o.otherExpenses[i];
+            const comb = i => o.rent[i] + o.electricity[i] + o.water[i] + o.otherRevenue[i];   // base do carnê-leão: só receitas
             o.base = idx.map(comb);
-            o.total = idx.map(i => o.base[i] - o.adminTax[i]);
+            o.total = idx.map(i => o.base[i] - o.otherExpenses[i] - o.adminTax[i]);
             return o;
         }
 
@@ -890,8 +890,9 @@
                         <div class="form-grid">
                             ${columnsHeader()}
                             <div class="form-row date-row"><label>Data de Recebimento</label><input type="date" value="${escapeHtml(p.date || '')}" aria-label="Data de recebimento (Enter ou Espaço abre o calendário)" data-field="date"></div>
-                            ${FIELDS.slice(0, 5).map(f => moneyRow(p, f)).join('')}
+                            ${FIELDS.slice(0, 4).map(f => moneyRow(p, f)).join('')}
                             ${totalRow(p, 'base', 'BASE TRIB. CARNÊ LEÃO (=)', 'background: #fcf3cf;')}
+                            ${moneyRow(p, FIELDS[4])}
                             ${moneyRow(p, FIELDS[5])}
                             ${totalRow(p, 'total', 'TOTAL RECEBIDO (=)')}
                             <div class="form-row obs-row ${p.observacoes ? '' : 'obs-empty'}" style="grid-template-columns: 1fr; border:none; padding-top:2px;">
@@ -943,9 +944,9 @@
         /* ================= RESUMO ANUAL ================= */
         // [chave, índice (0 = total, 1..N = pessoa), título] — colunas por pessoa só aparecem com 2+ pessoas
         function annualCols() {
-            const cols = [['rent', 0, 'Aluguéis'], ['electricity', 0, 'Energia'], ['water', 0, 'Água'], ['otherRevenue', 0, 'Outras Rec.'], ['otherExpenses', 0, 'Outras Desp.'], ['base', 0, 'Base Trib.']];
+            const cols = [['rent', 0, 'Aluguéis'], ['electricity', 0, 'Energia'], ['water', 0, 'Água'], ['otherRevenue', 0, 'Outras Rec.'], ['base', 0, 'Base Trib.']];
             if (NP() > 1) PEOPLE.forEach((n, i) => cols.push(['base', i + 1, `Base · ${n}`]));
-            cols.push(['adminTax', 0, 'Taxa Adm.'], ['total', 0, 'Total Recebido']);
+            cols.push(['otherExpenses', 0, 'Outras Desp.'], ['adminTax', 0, 'Taxa Adm.'], ['total', 0, 'Total Recebido']);
             if (NP() > 1) PEOPLE.forEach((n, i) => cols.push(['total', i + 1, `Total · ${n}`]));
             return cols;
         }
@@ -1069,12 +1070,12 @@
                 if (!count) rows = [];
                 filename = `resumo_anual_${slug(company)}_${y}.csv`;
             } else {
-                header = ['Empresa', 'Mês', 'Ano', 'Inquilino', 'CPF', 'Data de Recebimento', 'Aluguel', 'Energia', 'Água', 'Outras Receitas', 'Outras Despesas', 'Base Tributável', 'Taxa Adm.', 'Total Recebido',
+                header = ['Empresa', 'Mês', 'Ano', 'Inquilino', 'CPF', 'Data de Recebimento', 'Aluguel', 'Energia', 'Água', 'Outras Receitas', 'Base Tributável', 'Outras Despesas', 'Taxa Adm.', 'Total Recebido',
                     ...(multi ? [...PEOPLE.map(n => csvText(`Base · ${n}`)), ...PEOPLE.map(n => csvText(`Total · ${n}`))] : []), 'Observações'];
                 rows = getMonthProperties().map(p => {
                     const o = calc(p), per = k => PEOPLE.map((_, i) => csvNum(o[k][i + 1]));
                     return [csvText(company), MONTHS[appState.currentMonthIndex], y, csvText(p.name), csvText(p.cpf), p.date ? p.date.split('-').reverse().join('/') : '',
-                        csvNum(o.rent[0]), csvNum(o.electricity[0]), csvNum(o.water[0]), csvNum(o.otherRevenue[0]), csvNum(o.otherExpenses[0]), csvNum(o.base[0]), csvNum(o.adminTax[0]), csvNum(o.total[0]),
+                        csvNum(o.rent[0]), csvNum(o.electricity[0]), csvNum(o.water[0]), csvNum(o.otherRevenue[0]), csvNum(o.base[0]), csvNum(o.otherExpenses[0]), csvNum(o.adminTax[0]), csvNum(o.total[0]),
                         ...(multi ? [...per('base'), ...per('total')] : []), csvText(p.observacoes)];
                 });
                 filename = `recebimentos_${slug(company)}_${y}-${String(appState.currentMonthIndex + 1).padStart(2, '0')}.csv`;
